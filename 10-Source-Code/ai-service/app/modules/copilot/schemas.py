@@ -37,4 +37,6 @@ class PredictionRead(BaseModel):
     predicted_for_date: date | None
     generated_at: datetime
 
-    model_config = {"from_attributes": True}
+    # protected_namespaces=() — model_version is a real field name (matches the DB column and
+    # Database.md), not a Pydantic-internal one; silences the spurious "model_" prefix warning.
+    model_config = {"from_attributes": True, "protected_namespaces": ()}

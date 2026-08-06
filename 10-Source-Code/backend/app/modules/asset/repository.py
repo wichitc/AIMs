@@ -10,7 +10,7 @@ class LocationRepository:
     def __init__(self, db: AsyncSession):
         self.db = db
 
-    async def list(self, org_id: uuid.UUID) -> list[Location]:
+    async def list_all(self, org_id: uuid.UUID) -> list[Location]:
         stmt = select(Location).where(Location.org_id == org_id)
         return list((await self.db.execute(stmt)).scalars().all())
 
@@ -25,7 +25,7 @@ class AssetClassRepository:
     def __init__(self, db: AsyncSession):
         self.db = db
 
-    async def list(self) -> list[AssetClass]:
+    async def list_all(self) -> list[AssetClass]:
         return list((await self.db.execute(select(AssetClass))).scalars().all())
 
 
@@ -41,7 +41,7 @@ class AssetRepository:
         stmt = select(Asset).where(Asset.id == asset_id, Asset.is_deleted.is_(False))
         return (await self.db.execute(stmt)).scalar_one_or_none()
 
-    async def list(
+    async def list_all(
         self, org_id: uuid.UUID, offset: int, limit: int,
         location_id: uuid.UUID | None = None, status: str | None = None,
     ) -> tuple[list[Asset], int]:

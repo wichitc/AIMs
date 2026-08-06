@@ -35,7 +35,7 @@ class InspectionPlanService:
         return plan
 
     async def list_plans(self, asset_id: uuid.UUID | None, page: int, page_size: int):
-        return await self.repo.list(asset_id, (page - 1) * page_size, page_size)
+        return await self.repo.list_all(asset_id, (page - 1) * page_size, page_size)
 
 
 class InspectionService:
@@ -66,7 +66,7 @@ class InspectionService:
         return inspection
 
     async def list_inspections(self, status: str | None, inspector_id: uuid.UUID | None, page: int, page_size: int):
-        return await self.inspections.list(status, inspector_id, (page - 1) * page_size, page_size)
+        return await self.inspections.list_all(status, inspector_id, (page - 1) * page_size, page_size)
 
     async def submit_result(
         self, inspection_id: uuid.UUID, payload: InspectionResultCreate, actor_id: str | None

@@ -92,7 +92,7 @@ class UserService:
 
     async def list_users(self, org_id: uuid.UUID | None, page: int, page_size: int):
         offset = (page - 1) * page_size
-        return await self.users.list(org_id, offset, page_size)
+        return await self.users.list_all(org_id, offset, page_size)
 
 
 class RoleService:
@@ -101,7 +101,7 @@ class RoleService:
         self.roles = RoleRepository(db)
 
     async def list_roles(self) -> list[Role]:
-        return await self.roles.list()
+        return await self.roles.list_all()
 
     async def create_role(self, payload: RoleCreate, actor_id: str | None) -> Role:
         role = Role(name=payload.name, description=payload.description)
@@ -121,7 +121,7 @@ class OrganizationService:
         self.orgs = OrganizationRepository(db)
 
     async def list_organizations(self) -> list[Organization]:
-        return await self.orgs.list()
+        return await self.orgs.list_all()
 
     async def create_organization(self, payload: OrganizationCreate, actor_id: str | None) -> Organization:
         existing = await self.orgs.get_by_code(payload.code)

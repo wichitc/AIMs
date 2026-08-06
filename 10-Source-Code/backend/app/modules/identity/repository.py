@@ -27,7 +27,7 @@ class UserRepository:
         )
         return (await self.db.execute(stmt)).scalar_one_or_none()
 
-    async def list(self, org_id: uuid.UUID | None, offset: int, limit: int) -> tuple[list[User], int]:
+    async def list_all(self, org_id: uuid.UUID | None, offset: int, limit: int) -> tuple[list[User], int]:
         stmt = select(User).where(User.is_deleted.is_(False))
         if org_id:
             stmt = stmt.where(User.org_id == org_id)
@@ -53,7 +53,7 @@ class RoleRepository:
     def __init__(self, db: AsyncSession):
         self.db = db
 
-    async def list(self) -> list[Role]:
+    async def list_all(self) -> list[Role]:
         return list((await self.db.execute(select(Role))).scalars().all())
 
     async def get_by_id(self, role_id: uuid.UUID) -> Role | None:
@@ -67,7 +67,7 @@ class OrganizationRepository:
     def __init__(self, db: AsyncSession):
         self.db = db
 
-    async def list(self) -> list[Organization]:
+    async def list_all(self) -> list[Organization]:
         return list((await self.db.execute(select(Organization))).scalars().all())
 
     async def get_by_code(self, code: str) -> Organization | None:

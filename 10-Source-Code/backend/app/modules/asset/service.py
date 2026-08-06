@@ -34,7 +34,7 @@ class LocationService:
         self.repo = LocationRepository(db)
 
     async def list_locations(self, org_id: uuid.UUID) -> list[Location]:
-        return await self.repo.list(org_id)
+        return await self.repo.list_all(org_id)
 
     async def create_location(self, payload: LocationCreate, actor_id: str | None) -> Location:
         location = Location(**payload.model_dump())
@@ -53,7 +53,7 @@ class AssetClassService:
         self.repo = AssetClassRepository(db)
 
     async def list_asset_classes(self):
-        return await self.repo.list()
+        return await self.repo.list_all()
 
 
 class AssetService:
@@ -86,7 +86,7 @@ class AssetService:
 
     async def list_assets(self, org_id: uuid.UUID, page: int, page_size: int, **filters):
         offset = (page - 1) * page_size
-        return await self.assets.list(org_id, offset, page_size, **filters)
+        return await self.assets.list_all(org_id, offset, page_size, **filters)
 
     async def list_equipment(self, asset_id: uuid.UUID) -> list[Equipment]:
         await self.get_asset(asset_id)  # 404 if asset doesn't exist

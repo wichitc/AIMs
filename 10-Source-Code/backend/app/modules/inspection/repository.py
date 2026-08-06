@@ -20,7 +20,7 @@ class InspectionPlanRepository:
             await self.db.execute(select(InspectionPlan).where(InspectionPlan.id == plan_id))
         ).scalar_one_or_none()
 
-    async def list(self, asset_id: uuid.UUID | None, offset: int, limit: int) -> tuple[list[InspectionPlan], int]:
+    async def list_all(self, asset_id: uuid.UUID | None, offset: int, limit: int) -> tuple[list[InspectionPlan], int]:
         stmt = select(InspectionPlan)
         if asset_id:
             stmt = stmt.where(InspectionPlan.asset_id == asset_id)
@@ -44,7 +44,7 @@ class InspectionRepository:
         )
         return (await self.db.execute(stmt)).scalar_one_or_none()
 
-    async def list(
+    async def list_all(
         self, status: str | None, inspector_id: uuid.UUID | None, offset: int, limit: int
     ) -> tuple[list[Inspection], int]:
         stmt = select(Inspection)

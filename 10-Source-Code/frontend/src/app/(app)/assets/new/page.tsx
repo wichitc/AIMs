@@ -69,7 +69,15 @@ export default function NewAssetPage() {
       {(noUnitsAvailable || noClassesAvailable) && (
         <Card className="border-destructive/50">
           <CardContent className="pt-4 text-sm text-destructive">
-            {noUnitsAvailable && <p>No Unit-level locations exist yet — create one under Admin/Locations first.</p>}
+            {noUnitsAvailable && (
+              <p>
+                No Unit-level locations exist yet —{" "}
+                <a href="/locations/new" className="underline">
+                  create one first
+                </a>
+                .
+              </p>
+            )}
             {noClassesAvailable && <p>No asset classes exist yet — ask an administrator to add one.</p>}
           </CardContent>
         </Card>

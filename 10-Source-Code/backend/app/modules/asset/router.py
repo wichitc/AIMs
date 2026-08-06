@@ -107,7 +107,7 @@ async def create_location(
     db: AsyncSession = Depends(get_db),
     current_user: CurrentUser = Depends(require_permission("location.create")),
 ):
-    location = await LocationService(db).create_location(payload, current_user.id)
+    location = await LocationService(db).create_location(payload, current_user.org_id, current_user.id)
     return ResponseEnvelope(data=LocationRead.model_validate(location, from_attributes=True))
 
 

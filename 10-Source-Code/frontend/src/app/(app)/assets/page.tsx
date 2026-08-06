@@ -26,9 +26,14 @@ export default function AssetsPage() {
           <h1 className="text-xl font-semibold">Asset Register</h1>
           <p className="text-sm text-muted-foreground">Plant → Area → Unit → Equipment → Component hierarchy.</p>
         </div>
-        <Link href="/assets/new">
-          <Button>New Asset</Button>
-        </Link>
+        <div className="flex gap-2">
+          <Link href="/locations/new">
+            <Button variant="outline">New Location</Button>
+          </Link>
+          <Link href="/assets/new">
+            <Button>New Asset</Button>
+          </Link>
+        </div>
       </div>
 
       <div className="grid grid-cols-1 gap-4 md:grid-cols-[240px_1fr]">

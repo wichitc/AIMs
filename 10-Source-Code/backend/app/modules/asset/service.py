@@ -36,12 +36,12 @@ class LocationService:
     async def list_locations(self, org_id: uuid.UUID) -> list[Location]:
         return await self.repo.list_all(org_id)
 
-    async def create_location(self, payload: LocationCreate, actor_id: str | None) -> Location:
-        location = Location(**payload.model_dump())
+    async def create_location(self, payload: LocationCreate, org_id: str, actor_id: str | None) -> Location:
+        location = Location(org_id=uuid.UUID(org_id), **payload.model_dump())
         self.repo.add(location)
         await self.db.flush()
         await write_audit_log(
-            self.db, user_id=actor_id, org_id=str(payload.org_id), action="Create",
+            self.db, user_id=actor_id, org_id=org_id, action="Create",
             entity_type="Location", entity_id=location.id, new_value={"code": location.code},
         )
         await self.db.commit()

@@ -5,7 +5,10 @@ from pydantic import BaseModel, Field
 
 
 class LocationCreate(BaseModel):
-    org_id: uuid.UUID
+    # org_id is deliberately absent — it's derived server-side from the caller's JWT
+    # (see LocationService.create_location), never accepted from the client. It was
+    # missing this guard until now; matches the pattern every other *Create schema uses
+    # (see AssetCreate) and SecurityTest.md SEC-007.
     parent_location_id: uuid.UUID | None = None
     level: str = Field(pattern="^(Plant|Area|Unit)$")
     name: str = Field(max_length=200)

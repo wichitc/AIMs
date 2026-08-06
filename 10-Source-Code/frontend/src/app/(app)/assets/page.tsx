@@ -6,6 +6,7 @@ import { useApiQuery } from "@/lib/use-api-query";
 import { AssetTree } from "@/components/asset/AssetTree";
 import { Card, CardContent } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
+import { Button } from "@/components/ui/button";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { statusColor } from "@/lib/utils";
 import type { Asset, Location } from "@/lib/types";
@@ -20,9 +21,14 @@ export default function AssetsPage() {
 
   return (
     <div className="flex flex-col gap-4">
-      <div>
-        <h1 className="text-xl font-semibold">Asset Register</h1>
-        <p className="text-sm text-muted-foreground">Plant → Area → Unit → Equipment → Component hierarchy.</p>
+      <div className="flex items-center justify-between">
+        <div>
+          <h1 className="text-xl font-semibold">Asset Register</h1>
+          <p className="text-sm text-muted-foreground">Plant → Area → Unit → Equipment → Component hierarchy.</p>
+        </div>
+        <Link href="/assets/new">
+          <Button>New Asset</Button>
+        </Link>
       </div>
 
       <div className="grid grid-cols-1 gap-4 md:grid-cols-[240px_1fr]">

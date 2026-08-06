@@ -1,0 +1,15 @@
+# Root-level safety net — each service also has its own .gitignore for language-specific ignores.
+.env
+.env.local
+*.log
+.DS_Store
+Thumbs.db
+node_modules/
+__pycache__/
+*.pyc
+.next/
+.venv/
+.venv_check/
+*.tsbuildinfo
+next-env.d.ts
+.pytest_cache/

@@ -1,0 +1,133 @@
+name: CI
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+    branches: [main]
+
+jobs:
+  backend-test:
+    name: Backend — install, unit tests
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: AIMS-Enterprise-System/10-Source-Code/backend
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+      - run: pip install -r requirements.txt
+      - run: pytest -v
+
+  frontend-build:
+    name: Frontend — typecheck, build
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: AIMS-Enterprise-System/10-Source-Code/frontend
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: "20"
+          cache: "npm"
+          cache-dependency-path: AIMS-Enterprise-System/10-Source-Code/frontend/package-lock.json
+      - run: npm ci
+      - run: npm run typecheck
+      - run: npm run build
+
+  ai-service-smoke-test:
+    name: AI Service — install, import smoke test
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: AIMS-Enterprise-System/10-Source-Code/ai-service
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+      - run: pip install -r requirements.txt
+      - name: Import app and configure SQLAlchemy mappers
+        run: |
+          python -c "
+          from app.main import app
+          from sqlalchemy.orm import configure_mappers
+          configure_mappers()
+          assert len(app.openapi()['paths']) >= 4
+          print('AI service app loads OK')
+          "
+
+  security-scan:
+    name: Dependency vulnerability scan
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+      - name: pip-audit (backend)
+        run: |
+          pip install pip-audit
+          pip-audit -r AIMS-Enterprise-System/10-Source-Code/backend/requirements.txt || true
+      - name: pip-audit (ai-service)
+        run: pip-audit -r AIMS-Enterprise-System/10-Source-Code/ai-service/requirements.txt || true
+      - uses: actions/setup-node@v4
+        with:
+          node-version: "20"
+      - name: npm audit (frontend)
+        working-directory: AIMS-Enterprise-System/10-Source-Code/frontend
+        run: npm audit --production || true
+
+  # Runs only after all build/test jobs pass on main. Builds and pushes images but does not
+  # roll them out automatically — see Deployment.md §4 for the manual approval gate before
+  # production apply.
+  build-and-push-images:
+    name: Build & push Docker images
+    if: github.ref == 'refs/heads/main' && github.event_name == 'push'
+    needs: [backend-test, frontend-build, ai-service-smoke-test]
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      packages: write
+    steps:
+      - uses: actions/checkout@v4
+      - uses: docker/login-action@v3
+        with:
+          registry: ghcr.io
+          username: ${{ github.actor }}
+          password: ${{ secrets.GITHUB_TOKEN }}
+      - name: Build & push backend
+        uses: docker/build-push-action@v6
+        with:
+          context: AIMS-Enterprise-System/10-Source-Code/backend
+          push: true
+          tags: ghcr.io/${{ github.repository }}/aims-backend:${{ github.sha }}
+      - name: Build & push ai-service
+        uses: docker/build-push-action@v6
+        with:
+          context: AIMS-Enterprise-System/10-Source-Code/ai-service
+          push: true
+          tags: ghcr.io/${{ github.repository }}/aims-ai-service:${{ github.sha }}
+      - name: Build & push frontend
+        uses: docker/build-push-action@v6
+        with:
+          context: AIMS-Enterprise-System/10-Source-Code/frontend
+          push: true
+          tags: ghcr.io/${{ github.repository }}/aims-frontend:${{ github.sha }}
+          build-args: |
+            NEXT_PUBLIC_API_BASE_URL=${{ vars.NEXT_PUBLIC_API_BASE_URL }}
+
+  # Requires a GitHub Environment named "production" with required reviewers configured —
+  # that's the manual approval gate; this job simply won't start until someone approves it.
+  deploy-production:
+    name: Deploy to production (manual approval required)
+    if: github.ref == 'refs/heads/main' && github.event_name == 'push'
+    needs: build-and-push-images
+    runs-on: ubuntu-latest
+    environment: production
+    steps:
+      - name: Apply Kubernetes manifests
+        run: echo "kubectl apply -f k8s/ — placeholder, wire up cluster credentials before first real deploy"

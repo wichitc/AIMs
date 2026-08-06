@@ -39,11 +39,15 @@ services:
   backend:
     build:
       context: ../backend
-    command: sh -c "alembic upgrade head && uvicorn app.main:app --host 0.0.0.0 --port 8000"
+    # SEED_DEMO_DATA creates a login-ready admin user (see app/seed.py) — opt-in via env var
+    # rather than always-on, so this command is safe to reuse for staging/production where
+    # seeding a well-known admin password would be a real vulnerability.
+    command: sh -c "alembic upgrade head && ([ \"$SEED_DEMO_DATA\" = 'true' ] && python -m app.seed || true) && uvicorn app.main:app --host 0.0.0.0 --port 8000"
     environment:
       ENV: development
       DATABASE_URL: postgresql+asyncpg://${POSTGRES_USER:-aims}:${POSTGRES_PASSWORD:-aims}@postgres:5432/${POSTGRES_DB:-aims}
       REDIS_URL: redis://redis:6379/0
+      SEED_DEMO_DATA: ${SEED_DEMO_DATA:-true}
       JWT_SECRET_KEY: ${JWT_SECRET_KEY:-change-me-in-production}
       JWT_ALGORITHM: ${JWT_ALGORITHM:-HS256}
       CORS_ORIGINS: ${CORS_ORIGINS:-http://localhost:3000}

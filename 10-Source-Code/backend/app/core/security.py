@@ -1,20 +1,26 @@
 from datetime import datetime, timedelta, timezone
 from typing import Any
 
+import bcrypt
 from jose import JWTError, jwt
-from passlib.context import CryptContext
 
 from app.core.config import settings
 
-pwd_context = CryptContext(schemes=["bcrypt"], deprecated="auto")
+# Calls bcrypt directly rather than through passlib.CryptContext — passlib 1.7.4 is
+# unmaintained and its bcrypt backend-detection code is broken against modern bcrypt
+# releases (AttributeError: module 'bcrypt' has no attribute '__about__'). Verified by
+# actually running the seed script end-to-end; direct bcrypt has no such issue.
+_BCRYPT_MAX_BYTES = 72  # bcrypt silently ignores/errors past this — truncate deliberately
 
 
 def hash_password(password: str) -> str:
-    return pwd_context.hash(password)
+    truncated = password.encode("utf-8")[:_BCRYPT_MAX_BYTES]
+    return bcrypt.hashpw(truncated, bcrypt.gensalt()).decode("utf-8")
 
 
 def verify_password(plain_password: str, password_hash: str) -> bool:
-    return pwd_context.verify(plain_password, password_hash)
+    truncated = plain_password.encode("utf-8")[:_BCRYPT_MAX_BYTES]
+    return bcrypt.checkpw(truncated, password_hash.encode("utf-8"))
 
 
 def _create_token(subject: str, claims: dict[str, Any], expires_delta: timedelta) -> str:

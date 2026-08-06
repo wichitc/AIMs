@@ -11,7 +11,7 @@ actual implementation) alongside the test that verifies it — not just a checkl
 
 | Test ID | Check | Mitigation in Place | Test Method | Result |
 |---|---|---|---|---|
-| SEC-001 | Passwords are never stored in plaintext | `hash_password()` uses bcrypt via `passlib` ([security.py](../10-Source-Code/backend/app/core/security.py)) | Inspect `user.password_hash` column value — must be a bcrypt hash, never the raw password | |
+| SEC-001 | Passwords are never stored in plaintext | `hash_password()` calls `bcrypt` directly ([security.py](../10-Source-Code/backend/app/core/security.py)) — switched off `passlib` after its bcrypt backend detection broke against modern bcrypt releases, caught by actually running the seed script | Inspect `user.password_hash` column value — must be a bcrypt hash, never the raw password | Pass (verified via live login test, see [Deployment.md §2.1](../09-Deployment/Deployment.md#21-test-login-local-dev-only)) |
 | SEC-002 | Expired/invalid JWT is rejected | `decode_token()` raises on `JWTError`; `get_current_user` returns `401` | Send a request with a tampered/expired JWT | Expect `401 UNAUTHENTICATED` | |
 | SEC-003 | Disabled accounts cannot obtain a token | `AuthService.login` checks `user.is_active` | Attempt login with a disabled account | Expect `401`, "Account is disabled" | |
 | SEC-004 | Brute-force login attempts are rate-limited | API Gateway rate limit (100 req/min/user per [API-Spec.md §1.6](../05-API-Specification/API-Spec.md#16-security-baseline-applies-to-every-endpoint)) | Script 200 login attempts in 60s | Expect `429` after threshold | |
@@ -64,6 +64,12 @@ actual implementation) alongside the test that verifies it — not just a checkl
 | SEC-021 | Every mutation is logged with before/after state | `write_audit_log()` called from every service-layer create/update ([audit.py](../10-Source-Code/backend/app/common/audit.py)) | Perform a create and an update; query `/audit-logs` for that entity | Two entries, `old_value`/`new_value` populated correctly | |
 | SEC-022 | Audit log is append-only | No `PUT`/`DELETE /audit-logs` route exists; production DB role has no `UPDATE`/`DELETE` grant on `audit_log` (per [Database.md §12.1](../03-Database-Design/Database.md)) | Attempt to modify an audit row directly via the app-level DB role | Rejected by the database, not just the API | |
 | SEC-023 | Audit entries capture the acting user, not just "system" | `user_id` on every entry sourced from the authenticated `CurrentUser`, never client-supplied | Compare `audit_log.user_id` against the session that performed the action | Matches | |
+
+## 8. Seed / Demo Data
+
+| Test ID | Check | Mitigation in Place | Test Method | Result |
+|---|---|---|---|---|
+| SEC-024 | Seeded demo credentials (`admin` / `Admin@12345`, [seed.py](../10-Source-Code/backend/app/seed.py)) cannot reach staging/production | Seeding is gated behind `SEED_DEMO_DATA` (default `true` only in the local `docker-compose.yml`) | Confirm the staging/production deploy pipeline sets `SEED_DEMO_DATA=false` (or omits `app.seed` entirely) before first apply | Not yet closed — flagged as a pre-production checklist item; no K8s manifests exist yet to verify against |
 
 ---
 

@@ -44,6 +44,25 @@ and `ai-service` directly. In staging/production, gateway concerns (routing, rat
 termination) are handled by the Kubernetes Ingress controller, matching [Architecture.md §2](../02-System-Architecture/Architecture.md#2-high-level-architecture)'s
 logical API Gateway layer without a redundant extra hop in local dev.
 
+### 2.1 Test Login (local dev only)
+
+A fresh database has schema but no data — nothing to log in with until it's seeded. With
+`SEED_DEMO_DATA=true` (the `.env.example` default), the `backend` container runs
+[app/seed.py](../10-Source-Code/backend/app/seed.py) after migrations, creating a demo
+organization, a full-permission "Administrator" role, and a login-ready user:
+
+| Field | Value |
+|---|---|
+| URL | `http://localhost:3000/login` |
+| Username | `admin` |
+| Password | `Admin@12345` |
+
+Verified end-to-end against a real Postgres instance: login issues a token, the token
+authorizes `GET /v1/users/me`, and a permission-gated `POST /v1/organizations` succeeds with it.
+Seeding is idempotent (safe on every restart) but **must be set to `SEED_DEMO_DATA=false` for
+any staging/production environment** — a well-known seeded password is a real vulnerability
+outside local dev (see [SecurityTest.md](../08-Test-Plan/SecurityTest.md)).
+
 ## 3. Database Migrations (Alembic)
 
 Two services own migrations independently, each for the tables it writes to:

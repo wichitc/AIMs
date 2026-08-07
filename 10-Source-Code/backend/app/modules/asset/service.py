@@ -4,7 +4,7 @@ from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.common.audit import write_audit_log
 from app.core.exceptions import ConflictError, NotFoundError
-from app.modules.asset.models import Asset, Criticality, Equipment, Location
+from app.modules.asset.models import Asset, AssetClass, Criticality, Equipment, Location
 from app.modules.asset.repository import (
     AssetClassRepository,
     AssetRepository,
@@ -12,7 +12,13 @@ from app.modules.asset.repository import (
     EquipmentRepository,
     LocationRepository,
 )
-from app.modules.asset.schemas import AssetCreate, CriticalityCreate, EquipmentCreate, LocationCreate
+from app.modules.asset.schemas import (
+    AssetClassCreate,
+    AssetCreate,
+    CriticalityCreate,
+    EquipmentCreate,
+    LocationCreate,
+)
 
 # Weights follow API 580 qualitative criticality ranking (safety-weighted).
 _CRITICALITY_WEIGHTS = {"safety": 0.5, "environmental": 0.3, "economic": 0.2}
@@ -50,10 +56,26 @@ class LocationService:
 
 class AssetClassService:
     def __init__(self, db: AsyncSession):
+        self.db = db
         self.repo = AssetClassRepository(db)
 
     async def list_asset_classes(self):
         return await self.repo.list_all()
+
+    async def create_asset_class(self, payload: AssetClassCreate, actor_id: str | None) -> AssetClass:
+        existing = await self.repo.get_by_code(payload.code)
+        if existing:
+            raise ConflictError(f"Asset class code '{payload.code}' already exists")
+
+        asset_class = AssetClass(**payload.model_dump())
+        self.repo.add(asset_class)
+        await self.db.flush()
+        await write_audit_log(
+            self.db, user_id=actor_id, org_id=None, action="Create", entity_type="AssetClass",
+            entity_id=asset_class.id, new_value={"code": asset_class.code, "name": asset_class.name},
+        )
+        await self.db.commit()
+        return asset_class
 
 
 class AssetService:

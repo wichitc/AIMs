@@ -7,6 +7,7 @@ from app.common.response import PaginationMeta, ResponseEnvelope
 from app.core.database import get_db
 from app.core.dependencies import CurrentUser, require_permission
 from app.modules.asset.schemas import (
+    AssetClassCreate,
     AssetClassRead,
     AssetCreate,
     AssetRead,
@@ -118,3 +119,13 @@ async def list_asset_classes(
 ):
     classes = await AssetClassService(db).list_asset_classes()
     return ResponseEnvelope(data=[AssetClassRead.model_validate(c, from_attributes=True) for c in classes])
+
+
+@router.post("/asset-classes", response_model=ResponseEnvelope[AssetClassRead], status_code=201)
+async def create_asset_class(
+    payload: AssetClassCreate,
+    db: AsyncSession = Depends(get_db),
+    current_user: CurrentUser = Depends(require_permission("asset.create")),
+):
+    asset_class = await AssetClassService(db).create_asset_class(payload, current_user.id)
+    return ResponseEnvelope(data=AssetClassRead.model_validate(asset_class, from_attributes=True))

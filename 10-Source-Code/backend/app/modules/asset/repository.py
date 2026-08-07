@@ -28,6 +28,12 @@ class AssetClassRepository:
     async def list_all(self) -> list[AssetClass]:
         return list((await self.db.execute(select(AssetClass))).scalars().all())
 
+    async def get_by_code(self, code: str) -> AssetClass | None:
+        return (await self.db.execute(select(AssetClass).where(AssetClass.code == code))).scalar_one_or_none()
+
+    def add(self, asset_class: AssetClass) -> None:
+        self.db.add(asset_class)
+
 
 class AssetRepository:
     def __init__(self, db: AsyncSession):

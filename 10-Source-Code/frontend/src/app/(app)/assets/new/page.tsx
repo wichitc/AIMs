@@ -78,7 +78,15 @@ export default function NewAssetPage() {
                 .
               </p>
             )}
-            {noClassesAvailable && <p>No asset classes exist yet — ask an administrator to add one.</p>}
+            {noClassesAvailable && (
+              <p>
+                No asset classes exist yet —{" "}
+                <a href="/asset-classes/new" className="underline">
+                  create one first
+                </a>
+                .
+              </p>
+            )}
           </CardContent>
         </Card>
       )}

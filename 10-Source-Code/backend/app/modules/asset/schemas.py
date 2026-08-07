@@ -27,6 +27,15 @@ class LocationRead(BaseModel):
     model_config = {"from_attributes": True}
 
 
+class AssetClassCreate(BaseModel):
+    name: str = Field(max_length=100)
+    code: str = Field(max_length=30)
+    category: str = Field(
+        pattern="^(PressureVessel|Piping|Tank|Rotating|Static|Instrument|Electrical)$"
+    )
+    description: str | None = None
+
+
 class AssetClassRead(BaseModel):
     id: uuid.UUID
     name: str

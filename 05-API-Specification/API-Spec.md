@@ -132,6 +132,7 @@ Errors: `401 INVALID_CREDENTIALS`, `403 ACCOUNT_DISABLED`.
 | GET | `/locations` | List location tree (Plant/Area/Unit) | `location.read` |
 | POST | `/locations` | Create location node | `location.create` |
 | GET | `/asset-classes` | List asset classes | `asset.read` |
+| POST | `/asset-classes` | Create asset class (taxonomy row) | `asset.create` |
 | POST | `/assets/{id}/criticality` | Submit criticality assessment | `asset.update` |
 
 **POST `/assets`**

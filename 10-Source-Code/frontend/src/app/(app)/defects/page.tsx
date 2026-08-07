@@ -38,14 +38,12 @@ export default function DefectsPage() {
     return grouped;
   }, [defects.data]);
 
-  async function advance(defect: Defect) {
-    const target = NEXT_STEP[defect.workflow_status];
-    if (!target) return;
+  async function transition(defect: Defect, target: DefectWorkflowStatus) {
     try {
       await apiClient.put(`/defects/${defect.id}`, { target_status: target });
       defects.refetch();
     } catch (err) {
-      alert(err instanceof ApiError ? err.message : "Failed to advance defect");
+      alert(err instanceof ApiError ? err.message : "Failed to update defect");
     }
   }
 
@@ -79,8 +77,16 @@ export default function DefectsPage() {
                   <div>Due: {defect.due_date ?? "—"}</div>
                   {defect.ffs_required && <Badge className="w-fit">FFS Required</Badge>}
                   {NEXT_STEP[defect.workflow_status] && (
-                    <Button size="sm" variant="outline" onClick={() => advance(defect)}>
+                    <Button size="sm" variant="outline" onClick={() => transition(defect, NEXT_STEP[defect.workflow_status]!)}>
                       Advance to {NEXT_STEP[defect.workflow_status]}
+                    </Button>
+                  )}
+                  {/* Failed verification sends it back to Repair — the one legitimate
+                      backward transition (see app/modules/defect/service.py _VALID_TRANSITIONS
+                      and tests/test_defect_workflow.py). */}
+                  {defect.workflow_status === "Verification" && (
+                    <Button size="sm" variant="destructive" onClick={() => transition(defect, "Repair")}>
+                      Failed — Send back to Repair
                     </Button>
                   )}
                 </CardContent>

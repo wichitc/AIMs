@@ -5,6 +5,7 @@ import Link from "next/link";
 import { useApiQuery } from "@/lib/use-api-query";
 import { Card, CardContent } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
+import { Button } from "@/components/ui/button";
 import { Select } from "@/components/ui/select";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { statusColor } from "@/lib/utils";
@@ -26,13 +27,21 @@ export default function InspectionsPage() {
           <h1 className="text-xl font-semibold">Inspections</h1>
           <p className="text-sm text-muted-foreground">Scheduled, in-progress, and completed inspections.</p>
         </div>
-        <Select value={status} onChange={(e) => setStatus(e.target.value)} className="w-40">
-          {STATUSES.map((s) => (
-            <option key={s} value={s}>
-              {s}
-            </option>
-          ))}
-        </Select>
+        <div className="flex items-center gap-2">
+          <Select value={status} onChange={(e) => setStatus(e.target.value)} className="w-40">
+            {STATUSES.map((s) => (
+              <option key={s} value={s}>
+                {s}
+              </option>
+            ))}
+          </Select>
+          <Link href="/inspections/plans/new">
+            <Button variant="outline">New Plan</Button>
+          </Link>
+          <Link href="/inspections/new">
+            <Button>Schedule Inspection</Button>
+          </Link>
+        </div>
       </div>
 
       <Card>

@@ -32,7 +32,7 @@ class UserRepository:
         if org_id:
             stmt = stmt.where(User.org_id == org_id)
         total = len((await self.db.execute(stmt)).scalars().all())
-        stmt = stmt.offset(offset).limit(limit)
+        stmt = stmt.offset(offset).limit(limit).options(selectinload(User.roles).selectinload(UserRole.role))
         rows = (await self.db.execute(stmt)).scalars().all()
         return list(rows), total
 

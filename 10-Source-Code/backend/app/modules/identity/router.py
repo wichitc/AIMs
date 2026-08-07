@@ -36,7 +36,18 @@ async def list_users(
 ):
     users, total = await UserService(db).list_users(uuid.UUID(current_user.org_id), page, page_size)
     return ResponseEnvelope(
-        data=[UserRead.model_validate(u, from_attributes=True) for u in users],
+        # UserRead.roles is list[str] (role names), but User.roles is the list[UserRole]
+        # join relationship — model_validate can't bridge that automatically (it tried to
+        # coerce UserRole objects into strings and crashed on the unloaded relationship
+        # before that). Build the role-name list explicitly instead.
+        data=[
+            UserRead(
+                id=u.id, org_id=u.org_id, username=u.username, email=u.email,
+                full_name=u.full_name, is_active=u.is_active,
+                roles=[ur.role.name for ur in u.roles],
+            )
+            for u in users
+        ],
         meta=PaginationMeta(page=page, page_size=page_size, total=total),
     )
 

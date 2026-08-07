@@ -1,6 +1,7 @@
 "use client";
 
 import { useMemo } from "react";
+import Link from "next/link";
 import { useApiQuery } from "@/lib/use-api-query";
 import { apiClient, ApiError } from "@/lib/api-client";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
@@ -50,9 +51,14 @@ export default function DefectsPage() {
 
   return (
     <div className="flex flex-col gap-4">
-      <div>
-        <h1 className="text-xl font-semibold">Defect Workflow</h1>
-        <p className="text-sm text-muted-foreground">Finding → Assessment → Approval → Repair → Verification → Closed</p>
+      <div className="flex items-center justify-between">
+        <div>
+          <h1 className="text-xl font-semibold">Defect Workflow</h1>
+          <p className="text-sm text-muted-foreground">Finding → Assessment → Approval → Repair → Verification → Closed</p>
+        </div>
+        <Link href="/defects/new">
+          <Button>New Defect</Button>
+        </Link>
       </div>
 
       <div className="grid grid-cols-1 gap-3 overflow-x-auto sm:grid-cols-2 lg:grid-cols-6">

@@ -178,6 +178,7 @@ Errors: `409 DUPLICATE_TAG_NUMBER`, `400 VALIDATION_ERROR`, `404 LOCATION_NOT_FO
 | PUT | `/inspections/{id}` | Update inspection (status, actual_date) | `inspection.update` |
 | POST | `/inspections/{id}/results` | Submit checklist results | `inspection.execute` |
 | POST | `/inspections/{id}/findings` | Raise a finding | `inspection.execute` |
+| GET | `/findings` | List findings (filter: status, equipment_id) — used to select a finding when escalating to a defect | `inspection.read` |
 | POST | `/inspections/{id}/thickness-readings` | Submit thickness readings | `inspection.execute` |
 | POST | `/inspections/{id}/complete` | Mark inspection complete | `inspection.execute` |
 

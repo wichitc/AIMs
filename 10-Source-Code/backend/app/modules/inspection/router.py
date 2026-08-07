@@ -16,7 +16,7 @@ from app.modules.inspection.schemas import (
     InspectionResultCreate,
     InspectionResultRead,
 )
-from app.modules.inspection.service import InspectionPlanService, InspectionService
+from app.modules.inspection.service import FindingService, InspectionPlanService, InspectionService
 
 router = APIRouter(tags=["Inspection Management"])
 
@@ -118,3 +118,19 @@ async def complete_inspection(
 ):
     inspection = await InspectionService(db).complete_inspection(inspection_id, current_user.id)
     return ResponseEnvelope(data=InspectionRead.model_validate(inspection, from_attributes=True))
+
+
+@router.get("/findings", response_model=ResponseEnvelope[list[FindingRead]])
+async def list_findings(
+    status: str | None = None,
+    equipment_id: uuid.UUID | None = None,
+    page: int = 1,
+    page_size: int = 20,
+    db: AsyncSession = Depends(get_db),
+    current_user: CurrentUser = Depends(require_permission("inspection.read")),
+):
+    findings, total = await FindingService(db).list_findings(status, equipment_id, page, page_size)
+    return ResponseEnvelope(
+        data=[FindingRead.model_validate(f, from_attributes=True) for f in findings],
+        meta=PaginationMeta(page=page, page_size=page_size, total=total),
+    )

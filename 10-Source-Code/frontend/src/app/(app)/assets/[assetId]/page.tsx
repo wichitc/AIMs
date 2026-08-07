@@ -1,8 +1,11 @@
 "use client";
 
+import { useState } from "react";
 import { useApiQuery } from "@/lib/use-api-query";
+import { AddEquipmentForm } from "@/components/asset/AddEquipmentForm";
 import { Card, CardContent } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
+import { Button } from "@/components/ui/button";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { statusColor } from "@/lib/utils";
@@ -13,6 +16,7 @@ export default function AssetDetailPage({ params }: { params: { assetId: string 
   const asset = useApiQuery<Asset>(`/assets/${assetId}`);
   const equipment = useApiQuery<Equipment[]>(`/assets/${assetId}/equipment`);
   const risks = useApiQuery<RiskAssessment[]>("/risk-assessments", { asset_id: assetId });
+  const [showAddEquipment, setShowAddEquipment] = useState(false);
 
   if (asset.isLoading) return <p className="text-muted-foreground">Loading asset…</p>;
   if (asset.error || !asset.data) return <p className="text-destructive">{asset.error ?? "Asset not found"}</p>;
@@ -55,6 +59,28 @@ export default function AssetDetailPage({ params }: { params: { assetId: string 
         </TabsContent>
 
         <TabsContent value="equipment">
+          <div className="mb-3 flex justify-end">
+            {!showAddEquipment && (
+              <Button size="sm" onClick={() => setShowAddEquipment(true)}>
+                Add Component
+              </Button>
+            )}
+          </div>
+
+          {showAddEquipment && (
+            <div className="mb-3">
+              <AddEquipmentForm
+                assetId={assetId}
+                existingEquipment={equipment.data ?? []}
+                onCreated={() => {
+                  setShowAddEquipment(false);
+                  equipment.refetch();
+                }}
+                onCancel={() => setShowAddEquipment(false)}
+              />
+            </div>
+          )}
+
           <Card>
             <CardContent className="pt-4">
               <Table>

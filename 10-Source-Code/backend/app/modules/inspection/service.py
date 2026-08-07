@@ -6,7 +6,7 @@ from sqlalchemy.ext.asyncio import AsyncSession
 from app.common.audit import write_audit_log
 from app.core.exceptions import BusinessRuleError, ConflictError, NotFoundError
 from app.modules.inspection.models import Finding, Inspection, InspectionPlan, InspectionResult
-from app.modules.inspection.repository import InspectionPlanRepository, InspectionRepository
+from app.modules.inspection.repository import FindingRepository, InspectionPlanRepository, InspectionRepository
 from app.modules.inspection.schemas import (
     FindingCreate,
     InspectionCreate,
@@ -124,3 +124,18 @@ class InspectionService:
         )
         await self.db.commit()
         return inspection
+
+
+class FindingService:
+    def __init__(self, db: AsyncSession):
+        self.db = db
+        self.findings = FindingRepository(db)
+
+    async def get_finding(self, finding_id: uuid.UUID) -> Finding:
+        finding = await self.findings.get_by_id(finding_id)
+        if not finding:
+            raise NotFoundError(f"Finding {finding_id} not found")
+        return finding
+
+    async def list_findings(self, status: str | None, equipment_id: uuid.UUID | None, page: int, page_size: int):
+        return await self.findings.list_all(status, equipment_id, (page - 1) * page_size, page_size)

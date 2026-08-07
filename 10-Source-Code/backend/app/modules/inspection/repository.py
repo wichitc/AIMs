@@ -64,3 +64,24 @@ class InspectionRepository:
 
     def add_finding(self, finding: Finding) -> None:
         self.db.add(finding)
+
+
+class FindingRepository:
+    def __init__(self, db: AsyncSession):
+        self.db = db
+
+    async def get_by_id(self, finding_id: uuid.UUID) -> Finding | None:
+        return (await self.db.execute(select(Finding).where(Finding.id == finding_id))).scalar_one_or_none()
+
+    async def list_all(
+        self, status: str | None, equipment_id: uuid.UUID | None, offset: int, limit: int
+    ) -> tuple[list[Finding], int]:
+        stmt = select(Finding)
+        if status:
+            stmt = stmt.where(Finding.status == status)
+        if equipment_id:
+            stmt = stmt.where(Finding.equipment_id == equipment_id)
+        stmt = stmt.order_by(Finding.raised_date.desc())
+        total = len((await self.db.execute(stmt)).scalars().all())
+        rows = (await self.db.execute(stmt.offset(offset).limit(limit))).scalars().all()
+        return list(rows), total

@@ -5,6 +5,8 @@ WORKDIR /app
 # container startup — must be passed as a build ARG, not just a runtime environment var.
 ARG NEXT_PUBLIC_API_BASE_URL=http://localhost:8000/v1
 ENV NEXT_PUBLIC_API_BASE_URL=${NEXT_PUBLIC_API_BASE_URL}
+ARG NEXT_PUBLIC_AI_API_BASE_URL=http://localhost:8001/v1
+ENV NEXT_PUBLIC_AI_API_BASE_URL=${NEXT_PUBLIC_AI_API_BASE_URL}
 
 COPY package.json package-lock.json* ./
 RUN npm ci

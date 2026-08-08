@@ -184,3 +184,14 @@ export interface AimsDocument {
   version: number;
   uploaded_at: string;
 }
+
+// AI Engine service (ai-service) — separate base URL, see lib/api-client.ts aiApiClient.
+export interface SourceRef {
+  type: string;
+  id: string;
+}
+
+export interface QueryResponse {
+  answer: string;
+  sources: SourceRef[];
+}

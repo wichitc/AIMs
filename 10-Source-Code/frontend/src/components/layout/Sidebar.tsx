@@ -10,6 +10,7 @@ import {
   Wrench,
   Hammer,
   FileText,
+  Sparkles,
   Users,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
@@ -22,6 +23,7 @@ const NAV_ITEMS = [
   { href: "/defects", label: "Defects", icon: Wrench },
   { href: "/maintenance", label: "Maintenance", icon: Hammer },
   { href: "/documents", label: "Documents", icon: FileText },
+  { href: "/copilot", label: "AI Copilot", icon: Sparkles },
   { href: "/admin", label: "Admin", icon: Users },
 ];
 

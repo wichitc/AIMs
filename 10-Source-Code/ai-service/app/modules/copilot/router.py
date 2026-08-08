@@ -1,6 +1,6 @@
 import uuid
 
-from fastapi import APIRouter, Depends, HTTPException
+from fastapi import APIRouter, Depends
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.common.response import ResponseEnvelope
@@ -16,7 +16,7 @@ from app.modules.copilot.schemas import (
     ReportGenerateResponse,
     SourceRef,
 )
-from app.modules.copilot.service import CopilotError, CopilotService
+from app.modules.copilot.service import CopilotService
 
 router = APIRouter(tags=["AI Copilot"])
 
@@ -42,10 +42,7 @@ async def generate_report(
     service: CopilotService = Depends(get_copilot_service),
     current_user: CurrentUser = Depends(require_permission("ai.generate")),
 ):
-    try:
-        report, sources = await service.generate_report(payload.asset_id, uuid.UUID(current_user.org_id))
-    except CopilotError as exc:
-        raise HTTPException(status_code=exc.status_code, detail=exc.message) from exc
+    report, sources = await service.generate_report(payload.asset_id, uuid.UUID(current_user.org_id))
     result = ReportGenerateResponse(report_markdown=report, sources=[SourceRef(**s) for s in sources])
     return ResponseEnvelope(data=result)
 
@@ -58,9 +55,6 @@ async def get_predictions(
 ):
     predictions = await service.get_latest_predictions(asset_id)
     if not predictions:
-        try:
-            predictions = [await service.predict_failure(asset_id, uuid.UUID(current_user.org_id))]
-        except CopilotError as exc:
-            raise HTTPException(status_code=exc.status_code, detail=exc.message) from exc
+        predictions = [await service.predict_failure(asset_id, uuid.UUID(current_user.org_id))]
     result = [PredictionRead.model_validate(p, from_attributes=True) for p in predictions]
     return ResponseEnvelope(data=result)

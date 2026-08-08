@@ -27,8 +27,8 @@ export default function AssetsPage() {
           <p className="text-sm text-muted-foreground">Plant → Area → Unit → Equipment → Component hierarchy.</p>
         </div>
         <div className="flex gap-2">
-          <Link href="/locations/new">
-            <Button variant="outline">New Location</Button>
+          <Link href="/locations">
+            <Button variant="outline">Locations</Button>
           </Link>
           <Link href="/asset-classes">
             <Button variant="outline">Asset Classes</Button>

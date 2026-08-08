@@ -26,6 +26,8 @@ export default function NewLocationPage() {
   const [parentLocationId, setParentLocationId] = useState("");
   const [name, setName] = useState("");
   const [code, setCode] = useState("");
+  const [latitude, setLatitude] = useState("");
+  const [longitude, setLongitude] = useState("");
 
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -49,8 +51,10 @@ export default function NewLocationPage() {
         parent_location_id: parentLocationId || undefined,
         name,
         code,
+        latitude: latitude ? Number(latitude) : undefined,
+        longitude: longitude ? Number(longitude) : undefined,
       });
-      router.push("/assets");
+      router.push("/locations");
     } catch (err) {
       setError(err instanceof ApiError ? err.message : "Failed to create location");
     } finally {
@@ -145,6 +149,35 @@ export default function NewLocationPage() {
               </div>
             </div>
 
+            <div className="grid grid-cols-2 gap-3">
+              <div>
+                <label className="mb-1 block text-sm font-medium" htmlFor="latitude">
+                  Latitude (optional)
+                </label>
+                <Input
+                  id="latitude"
+                  type="number"
+                  step="0.000001"
+                  placeholder="e.g. 12.682400"
+                  value={latitude}
+                  onChange={(e) => setLatitude(e.target.value)}
+                />
+              </div>
+              <div>
+                <label className="mb-1 block text-sm font-medium" htmlFor="longitude">
+                  Longitude (optional)
+                </label>
+                <Input
+                  id="longitude"
+                  type="number"
+                  step="0.000001"
+                  placeholder="e.g. 101.147800"
+                  value={longitude}
+                  onChange={(e) => setLongitude(e.target.value)}
+                />
+              </div>
+            </div>
+
             {error && <p className="text-sm text-destructive">{error}</p>}
 
             <div className="mt-2 flex gap-2">
@@ -154,7 +187,7 @@ export default function NewLocationPage() {
               >
                 {isSubmitting ? "Creating..." : "Create Location"}
               </Button>
-              <Button type="button" variant="outline" onClick={() => router.push("/assets")}>
+              <Button type="button" variant="outline" onClick={() => router.push("/locations")}>
                 Cancel
               </Button>
             </div>

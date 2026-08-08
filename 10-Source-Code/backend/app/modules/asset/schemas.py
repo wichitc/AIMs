@@ -23,6 +23,8 @@ class LocationRead(BaseModel):
     level: str
     name: str
     code: str
+    latitude: float | None
+    longitude: float | None
 
     model_config = {"from_attributes": True}
 

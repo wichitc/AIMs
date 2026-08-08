@@ -23,6 +23,8 @@ export interface Location {
   level: "Plant" | "Area" | "Unit";
   name: string;
   code: string;
+  latitude: number | null;
+  longitude: number | null;
 }
 
 export interface AssetClass {

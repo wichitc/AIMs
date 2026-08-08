@@ -41,6 +41,7 @@ class AssetClassRead(BaseModel):
     name: str
     code: str
     category: str
+    description: str | None
 
     model_config = {"from_attributes": True}
 

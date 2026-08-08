@@ -30,8 +30,8 @@ export default function AssetsPage() {
           <Link href="/locations/new">
             <Button variant="outline">New Location</Button>
           </Link>
-          <Link href="/asset-classes/new">
-            <Button variant="outline">New Asset Class</Button>
+          <Link href="/asset-classes">
+            <Button variant="outline">Asset Classes</Button>
           </Link>
           <Link href="/assets/new">
             <Button>New Asset</Button>

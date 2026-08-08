@@ -30,6 +30,7 @@ export interface AssetClass {
   name: string;
   code: string;
   category: string;
+  description: string | null;
 }
 
 export type AssetStatus =

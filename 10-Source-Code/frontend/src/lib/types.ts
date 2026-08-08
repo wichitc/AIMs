@@ -51,6 +51,9 @@ export interface Asset {
   name: string;
   status: AssetStatus;
   design_code: string | null;
+  design_pressure_bar: number | null;
+  design_temperature_c: number | null;
+  material: string | null;
   install_date: string | null;
 }
 
@@ -62,6 +65,8 @@ export interface Equipment {
   tag_number: string;
   name: string;
   cml_number: string | null;
+  nominal_thickness_mm: number | null;
+  minimum_required_thickness_mm: number | null;
 }
 
 export type CriticalityLevel = "Low" | "Medium" | "High" | "VeryHigh";
@@ -79,9 +84,12 @@ export type InspectionStatus = "Planned" | "InProgress" | "Completed" | "Overdue
 export interface InspectionPlan {
   id: string;
   asset_id: string;
+  equipment_id: string | null;
   plan_code: string;
+  applicable_code: string | null;
   inspection_type: string;
   basis: "RBI" | "FixedInterval" | "Regulatory";
+  frequency_months: number;
   next_due_date: string;
   status: "Active" | "Suspended" | "Retired";
 }
@@ -90,7 +98,9 @@ export interface Inspection {
   id: string;
   inspection_plan_id: string;
   asset_id: string;
+  equipment_id: string | null;
   inspector_id: string;
+  inspection_type: string;
   status: InspectionStatus;
   scheduled_date: string;
   actual_date: string | null;
@@ -162,9 +172,11 @@ export interface Defect {
   id: string;
   finding_id: string;
   equipment_id: string;
+  defect_type: string;
   workflow_status: DefectWorkflowStatus;
   severity: FindingSeverity;
   ffs_required: boolean;
+  assigned_to: string | null;
   due_date: string | null;
   closed_date: string | null;
 }
@@ -174,10 +186,13 @@ export interface MaintenanceOrder {
   equipment_id: string;
   defect_id: string | null;
   order_type: "Corrective" | "Preventive" | "Predictive";
+  description: string;
   status: "Open" | "InProgress" | "Completed" | "Cancelled";
   priority: "Low" | "Medium" | "High" | "Urgent";
   scheduled_date: string | null;
   completed_date: string | null;
+  assigned_to: string | null;
+  cost_estimate: number | null;
 }
 
 export interface AimsDocument {

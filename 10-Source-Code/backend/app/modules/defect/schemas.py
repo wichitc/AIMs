@@ -23,9 +23,11 @@ class DefectRead(BaseModel):
     id: uuid.UUID
     finding_id: uuid.UUID
     equipment_id: uuid.UUID
+    defect_type: str
     workflow_status: str
     severity: str
     ffs_required: bool
+    assigned_to: uuid.UUID | None
     due_date: date | None
     closed_date: date | None
 

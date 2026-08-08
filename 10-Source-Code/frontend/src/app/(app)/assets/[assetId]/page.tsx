@@ -56,6 +56,18 @@ export default function AssetDetailPage({ params }: { params: { assetId: string 
                 <div className="text-muted-foreground">Status</div>
                 <div>{data.status}</div>
               </div>
+              <div>
+                <div className="text-muted-foreground">Design Pressure</div>
+                <div>{data.design_pressure_bar != null ? `${data.design_pressure_bar} bar` : "—"}</div>
+              </div>
+              <div>
+                <div className="text-muted-foreground">Design Temperature</div>
+                <div>{data.design_temperature_c != null ? `${data.design_temperature_c} °C` : "—"}</div>
+              </div>
+              <div>
+                <div className="text-muted-foreground">Material</div>
+                <div>{data.material ?? "—"}</div>
+              </div>
             </CardContent>
           </Card>
         </TabsContent>
@@ -92,6 +104,8 @@ export default function AssetDetailPage({ params }: { params: { assetId: string 
                     <TableHead>Level</TableHead>
                     <TableHead>Name</TableHead>
                     <TableHead>CML</TableHead>
+                    <TableHead>Nominal (mm)</TableHead>
+                    <TableHead>Min. Required (mm)</TableHead>
                   </TableRow>
                 </TableHeader>
                 <TableBody>
@@ -101,11 +115,13 @@ export default function AssetDetailPage({ params }: { params: { assetId: string 
                       <TableCell>{eq.level}</TableCell>
                       <TableCell>{eq.name}</TableCell>
                       <TableCell>{eq.cml_number ?? "—"}</TableCell>
+                      <TableCell>{eq.nominal_thickness_mm ?? "—"}</TableCell>
+                      <TableCell>{eq.minimum_required_thickness_mm ?? "—"}</TableCell>
                     </TableRow>
                   ))}
                   {equipment.data?.length === 0 && (
                     <TableRow>
-                      <TableCell colSpan={4} className="text-center text-muted-foreground">
+                      <TableCell colSpan={6} className="text-center text-muted-foreground">
                         No components registered
                       </TableCell>
                     </TableRow>

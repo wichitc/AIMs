@@ -9,6 +9,12 @@ import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import type { MaintenanceOrder } from "@/lib/types";
 
+interface UserOption {
+  id: string;
+  username: string;
+  full_name: string;
+}
+
 type Status = MaintenanceOrder["status"];
 
 const COLUMNS: Status[] = ["Open", "InProgress", "Completed", "Cancelled"];
@@ -22,6 +28,13 @@ const PRIORITY_COLOR: Record<MaintenanceOrder["priority"], string> = {
 
 export default function MaintenancePage() {
   const orders = useApiQuery<MaintenanceOrder[]>("/maintenance-orders", { page_size: 200 });
+  const users = useApiQuery<UserOption[]>("/users", { page_size: 100 });
+
+  const userById = useMemo(() => {
+    const map = new Map<string, UserOption>();
+    (users.data ?? []).forEach((u) => map.set(u.id, u));
+    return map;
+  }, [users.data]);
 
   const byColumn = useMemo(() => {
     const grouped: Record<Status, MaintenanceOrder[]> = { Open: [], InProgress: [], Completed: [], Cancelled: [] };
@@ -68,8 +81,13 @@ export default function MaintenancePage() {
                   </CardTitle>
                 </CardHeader>
                 <CardContent className="flex flex-col gap-2 text-xs text-muted-foreground">
+                  <p className="text-foreground">{order.description}</p>
                   <div>Scheduled: {order.scheduled_date ?? "—"}</div>
                   {order.completed_date && <div>Completed: {order.completed_date}</div>}
+                  {order.cost_estimate != null && <div>Est. cost: {order.cost_estimate.toLocaleString()}</div>}
+                  {order.assigned_to && (
+                    <div>Assigned: {userById.get(order.assigned_to)?.full_name ?? order.assigned_to}</div>
+                  )}
                   {order.defect_id && (
                     <Badge className="w-fit bg-blue-100 text-blue-800 border-blue-200">From Defect</Badge>
                   )}

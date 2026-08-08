@@ -75,6 +75,9 @@ class AssetRead(BaseModel):
     name: str
     status: str
     design_code: str | None
+    design_pressure_bar: float | None
+    design_temperature_c: float | None
+    material: str | None
     install_date: date | None
 
     model_config = {"from_attributes": True}
@@ -98,6 +101,8 @@ class EquipmentRead(BaseModel):
     tag_number: str
     name: str
     cml_number: str | None
+    nominal_thickness_mm: float | None
+    minimum_required_thickness_mm: float | None
 
     model_config = {"from_attributes": True}
 

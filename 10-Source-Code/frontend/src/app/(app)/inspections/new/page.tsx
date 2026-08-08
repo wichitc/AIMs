@@ -110,7 +110,8 @@ export default function NewInspectionPage() {
               </Select>
               {selectedPlan && (
                 <p className="mt-1 text-xs text-muted-foreground">
-                  Basis: {selectedPlan.basis} · Next due: {selectedPlan.next_due_date ?? "—"}
+                  Basis: {selectedPlan.basis} · Code: {selectedPlan.applicable_code ?? "—"} · Next due:{" "}
+                  {selectedPlan.next_due_date ?? "—"}
                 </p>
               )}
             </div>

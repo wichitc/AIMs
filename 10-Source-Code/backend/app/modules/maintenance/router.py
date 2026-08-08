@@ -37,10 +37,13 @@ class MaintenanceOrderRead(BaseModel):
     equipment_id: uuid.UUID
     defect_id: uuid.UUID | None
     order_type: str
+    description: str
     status: str
     priority: str
     scheduled_date: date | None
     completed_date: date | None
+    assigned_to: uuid.UUID | None
+    cost_estimate: float | None
 
     model_config = {"from_attributes": True}
 

@@ -18,9 +18,12 @@ class InspectionPlanCreate(BaseModel):
 class InspectionPlanRead(BaseModel):
     id: uuid.UUID
     asset_id: uuid.UUID
+    equipment_id: uuid.UUID | None
     plan_code: str
+    applicable_code: str | None
     inspection_type: str
     basis: str
+    frequency_months: int
     next_due_date: date
     status: str
 
@@ -45,7 +48,9 @@ class InspectionRead(BaseModel):
     id: uuid.UUID
     inspection_plan_id: uuid.UUID
     asset_id: uuid.UUID
+    equipment_id: uuid.UUID | None
     inspector_id: uuid.UUID
+    inspection_type: str
     status: str
     scheduled_date: date
     actual_date: date | None

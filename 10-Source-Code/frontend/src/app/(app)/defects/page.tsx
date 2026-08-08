@@ -10,6 +10,12 @@ import { Button } from "@/components/ui/button";
 import { severityColor } from "@/lib/utils";
 import type { Defect, DefectWorkflowStatus } from "@/lib/types";
 
+interface UserOption {
+  id: string;
+  username: string;
+  full_name: string;
+}
+
 const COLUMNS: DefectWorkflowStatus[] = ["Finding", "Assessment", "Approval", "Repair", "Verification", "Closed"];
 
 // Mirrors app/modules/defect/service.py _VALID_TRANSITIONS — the API is the source of truth;
@@ -24,6 +30,13 @@ const NEXT_STEP: Partial<Record<DefectWorkflowStatus, DefectWorkflowStatus>> = {
 
 export default function DefectsPage() {
   const defects = useApiQuery<Defect[]>("/defects", { page_size: 200 });
+  const users = useApiQuery<UserOption[]>("/users", { page_size: 100 });
+
+  const userById = useMemo(() => {
+    const map = new Map<string, UserOption>();
+    (users.data ?? []).forEach((u) => map.set(u.id, u));
+    return map;
+  }, [users.data]);
 
   const byColumn = useMemo(() => {
     const grouped: Record<DefectWorkflowStatus, Defect[]> = {
@@ -69,12 +82,15 @@ export default function DefectsPage() {
               <Card key={defect.id}>
                 <CardHeader>
                   <CardTitle className="flex items-center justify-between text-foreground">
-                    <span className="text-sm">Defect</span>
+                    <span className="text-sm">{defect.defect_type}</span>
                     <Badge className={severityColor(defect.severity)}>{defect.severity}</Badge>
                   </CardTitle>
                 </CardHeader>
                 <CardContent className="flex flex-col gap-2 text-xs text-muted-foreground">
                   <div>Due: {defect.due_date ?? "—"}</div>
+                  {defect.assigned_to && (
+                    <div>Assigned: {userById.get(defect.assigned_to)?.full_name ?? defect.assigned_to}</div>
+                  )}
                   {defect.ffs_required && <Badge className="w-fit">FFS Required</Badge>}
                   {NEXT_STEP[defect.workflow_status] && (
                     <Button size="sm" variant="outline" onClick={() => transition(defect, NEXT_STEP[defect.workflow_status]!)}>

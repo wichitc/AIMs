@@ -3,6 +3,7 @@
 import { useState } from "react";
 import { useApiQuery } from "@/lib/use-api-query";
 import { AddEquipmentForm } from "@/components/asset/AddEquipmentForm";
+import { CorrosionPanel } from "@/components/asset/CorrosionPanel";
 import { Card, CardContent } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
@@ -35,6 +36,7 @@ export default function AssetDetailPage({ params }: { params: { assetId: string 
         <TabsList>
           <TabsTrigger value="overview">Overview</TabsTrigger>
           <TabsTrigger value="equipment">Equipment</TabsTrigger>
+          <TabsTrigger value="corrosion">Corrosion</TabsTrigger>
           <TabsTrigger value="risk">Risk</TabsTrigger>
           <TabsTrigger value="documents">Documents</TabsTrigger>
         </TabsList>
@@ -112,6 +114,10 @@ export default function AssetDetailPage({ params }: { params: { assetId: string 
               </Table>
             </CardContent>
           </Card>
+        </TabsContent>
+
+        <TabsContent value="corrosion">
+          <CorrosionPanel equipment={equipment.data ?? []} />
         </TabsContent>
 
         <TabsContent value="risk">

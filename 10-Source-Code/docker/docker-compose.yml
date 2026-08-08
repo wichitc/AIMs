@@ -51,8 +51,13 @@ services:
       JWT_SECRET_KEY: ${JWT_SECRET_KEY:-change-me-in-production}
       JWT_ALGORITHM: ${JWT_ALGORITHM:-HS256}
       CORS_ORIGINS: ${CORS_ORIGINS:-http://localhost:3000}
+      DOCUMENT_STORAGE_PATH: /app/storage/documents
     ports:
       - "8000:8000"
+    volumes:
+      # Local-disk document storage (see core/config.py's note on why this isn't object
+      # storage yet) — must survive `docker compose up` recreating the container.
+      - document_storage:/app/storage/documents
     depends_on:
       postgres:
         condition: service_healthy
@@ -99,3 +104,4 @@ services:
 volumes:
   postgres_data:
   mosquitto_data:
+  document_storage:

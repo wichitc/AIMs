@@ -21,5 +21,13 @@ class Settings(BaseSettings):
     def cors_origin_list(self) -> list[str]:
         return [origin.strip() for origin in self.cors_origins.split(",") if origin.strip()]
 
+    # API-Spec.md originally specified a pre-signed-URL flow (client uploads directly to
+    # object storage, API only registers metadata) — no object storage service exists in
+    # this deployment yet (no MinIO/S3 in docker-compose.yml), so documents are stored on
+    # a local volume behind the API instead. Swap this for real object storage + presigned
+    # URLs before scaling past a single backend replica (local disk doesn't share across
+    # instances).
+    document_storage_path: str = "/app/storage/documents"
+
 
 settings = Settings()

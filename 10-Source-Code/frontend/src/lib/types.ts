@@ -179,9 +179,11 @@ export interface MaintenanceOrder {
 
 export interface AimsDocument {
   id: string;
+  asset_id: string | null;
   document_type: string;
   file_name: string;
   version: number;
+  file_size_bytes: number | null;
   uploaded_at: string;
 }
 

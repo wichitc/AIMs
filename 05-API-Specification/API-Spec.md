@@ -320,10 +320,15 @@ Workflow transitions enforced server-side: `Finding → Assessment → Approval 
 | Method | Path | Description | Permission |
 |---|---|---|---|
 | GET | `/documents` | List documents (filter: asset, type) | `document.read` |
-| POST | `/documents` | Upload document (multipart) — requires explicit user confirmation for external uploads | `document.create` |
+| POST | `/documents` | Register metadata for a file already placed in external object storage (pre-signed-URL flow — no such storage is wired up in this deployment yet, see `core/config.py`) | `document.create` |
+| POST | `/documents/upload` | Upload a file directly (multipart/form-data); stored on a local volume behind the API, size-limited to 25 MB, extension allow-listed | `document.create` |
 | GET | `/documents/{id}` | Get document metadata | `document.read` |
-| GET | `/documents/{id}/download` | Download signed URL | `document.read` |
-| POST | `/documents/{id}/versions` | Upload new version | `document.update` |
+| GET | `/documents/{id}/download` | Download the stored file | `document.read` |
+
+Document uploads happen client-side with explicit user action (a file picker + submit) — this
+is a standard in-app upload, not an automated/background transfer, so it doesn't require the
+extra confirmation step reserved for uploads triggered on the user's behalf without them
+picking the file directly.
 
 ---
 

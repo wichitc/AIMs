@@ -8,6 +8,7 @@ import {
   ClipboardCheck,
   ShieldAlert,
   Wrench,
+  Hammer,
   FileText,
   Users,
 } from "lucide-react";
@@ -19,6 +20,7 @@ const NAV_ITEMS = [
   { href: "/inspections", label: "Inspections", icon: ClipboardCheck },
   { href: "/risk", label: "Risk (RBI)", icon: ShieldAlert },
   { href: "/defects", label: "Defects", icon: Wrench },
+  { href: "/maintenance", label: "Maintenance", icon: Hammer },
   { href: "/documents", label: "Documents", icon: FileText },
   { href: "/admin", label: "Admin", icon: Users },
 ];

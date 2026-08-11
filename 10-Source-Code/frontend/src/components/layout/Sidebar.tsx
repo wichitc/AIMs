@@ -12,6 +12,7 @@ import {
   FileText,
   Sparkles,
   Users,
+  History,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 
@@ -24,6 +25,7 @@ const NAV_ITEMS = [
   { href: "/maintenance", label: "Maintenance", icon: Hammer },
   { href: "/documents", label: "Documents", icon: FileText },
   { href: "/copilot", label: "AI Copilot", icon: Sparkles },
+  { href: "/audit-log", label: "Audit Log", icon: History },
   { href: "/admin", label: "Admin", icon: Users },
 ];
 

@@ -93,6 +93,16 @@ async def assess_criticality(
     return ResponseEnvelope(data=CriticalityRead.model_validate(criticality, from_attributes=True))
 
 
+@router.get("/assets/{asset_id}/criticality", response_model=ResponseEnvelope[list[CriticalityRead]])
+async def list_criticality_history(
+    asset_id: uuid.UUID,
+    db: AsyncSession = Depends(get_db),
+    current_user: CurrentUser = Depends(require_permission("asset.read")),
+):
+    history = await CriticalityService(db).list_history(asset_id)
+    return ResponseEnvelope(data=[CriticalityRead.model_validate(c, from_attributes=True) for c in history])
+
+
 @router.get("/locations", response_model=ResponseEnvelope[list[LocationRead]])
 async def list_locations(
     db: AsyncSession = Depends(get_db),

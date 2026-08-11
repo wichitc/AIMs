@@ -74,8 +74,12 @@ export type CriticalityLevel = "Low" | "Medium" | "High" | "VeryHigh";
 export interface Criticality {
   id: string;
   asset_id: string;
+  safety_score: number;
+  environmental_score: number;
+  economic_score: number;
   calculated_score: number;
   criticality_level: CriticalityLevel;
+  methodology: string | null;
   assessed_date: string;
 }
 

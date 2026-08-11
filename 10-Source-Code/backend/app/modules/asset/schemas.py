@@ -118,8 +118,12 @@ class CriticalityCreate(BaseModel):
 class CriticalityRead(BaseModel):
     id: uuid.UUID
     asset_id: uuid.UUID
+    safety_score: float
+    environmental_score: float
+    economic_score: float
     calculated_score: float
     criticality_level: str
+    methodology: str | None
     assessed_date: date
 
     model_config = {"from_attributes": True}

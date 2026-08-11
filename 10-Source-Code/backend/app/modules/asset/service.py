@@ -165,3 +165,6 @@ class CriticalityService:
         )
         await self.db.commit()
         return criticality
+
+    async def list_history(self, asset_id: uuid.UUID) -> list[Criticality]:
+        return await self.repo.history_for_asset(asset_id)

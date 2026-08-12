@@ -16,7 +16,10 @@ class TokenResponse(BaseModel):
 
 
 class UserCreate(BaseModel):
-    org_id: uuid.UUID
+    # org_id is deliberately absent — derived server-side from the caller's JWT (see
+    # UserService.create_user), never accepted from the client. Same SEC-007 pattern as
+    # LocationCreate: without this, any caller with only user.create could plant an
+    # account in an arbitrary organization by forging org_id.
     username: str = Field(max_length=100)
     email: EmailStr
     password: str = Field(min_length=8)
@@ -52,12 +55,23 @@ class RoleRead(BaseModel):
     name: str
     description: str | None
     is_system_role: bool
+    permission_codes: list[str] = []
 
     model_config = {"from_attributes": True}
 
 
 class RolePermissionsUpdate(BaseModel):
     permission_ids: list[uuid.UUID]
+
+
+class PermissionRead(BaseModel):
+    id: uuid.UUID
+    code: str
+    module: str
+    action: str
+    description: str | None
+
+    model_config = {"from_attributes": True}
 
 
 class OrganizationCreate(BaseModel):

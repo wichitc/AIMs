@@ -10,8 +10,14 @@ from app.core.security import (
     hash_password,
     verify_password,
 )
-from app.modules.identity.models import Organization, Role, User
-from app.modules.identity.repository import OrganizationRepository, RoleRepository, UserRepository
+from app.modules.identity.models import Organization, Permission, Role, User
+from app.modules.identity.repository import (
+    OrganizationRepository,
+    PermissionRepository,
+    RolePermissionRepository,
+    RoleRepository,
+    UserRepository,
+)
 from app.modules.identity.schemas import OrganizationCreate, RoleCreate, TokenResponse, UserCreate, UserRead
 
 
@@ -56,13 +62,13 @@ class UserService:
         self.db = db
         self.users = UserRepository(db)
 
-    async def create_user(self, payload: UserCreate, actor_id: str | None) -> User:
+    async def create_user(self, payload: UserCreate, org_id: uuid.UUID, actor_id: str | None) -> User:
         existing = await self.users.get_by_username(payload.username)
         if existing:
             raise ConflictError(f"Username '{payload.username}' is already taken")
 
         user = User(
-            org_id=payload.org_id,
+            org_id=org_id,
             username=payload.username,
             email=payload.email,
             password_hash=hash_password(payload.password),
@@ -75,7 +81,7 @@ class UserService:
         await write_audit_log(
             self.db,
             user_id=actor_id,
-            org_id=str(payload.org_id),
+            org_id=str(org_id),
             action="Create",
             entity_type="User",
             entity_id=user.id,
@@ -99,6 +105,8 @@ class RoleService:
     def __init__(self, db: AsyncSession):
         self.db = db
         self.roles = RoleRepository(db)
+        self.permissions = PermissionRepository(db)
+        self.role_permissions = RolePermissionRepository(db)
 
     async def list_roles(self) -> list[Role]:
         return await self.roles.list_all()
@@ -112,7 +120,25 @@ class RoleService:
             new_value={"name": role.name},
         )
         await self.db.commit()
-        return role
+        return await self.roles.get_by_id(role.id)
+
+    async def list_permissions(self) -> list[Permission]:
+        return await self.permissions.list_all()
+
+    async def update_role_permissions(
+        self, role_id: uuid.UUID, permission_ids: list[uuid.UUID], actor_id: str | None
+    ) -> Role:
+        role = await self.roles.get_by_id(role_id)
+        if not role:
+            raise NotFoundError(f"Role {role_id} not found")
+
+        await self.role_permissions.replace_for_role(role_id, permission_ids)
+        await write_audit_log(
+            self.db, user_id=actor_id, org_id=None, action="Update", entity_type="Role", entity_id=role_id,
+            new_value={"permission_count": len(permission_ids)},
+        )
+        await self.db.commit()
+        return await self.roles.get_by_id(role_id)
 
 
 class OrganizationService:

@@ -1,6 +1,6 @@
 import uuid
 
-from sqlalchemy import select
+from sqlalchemy import delete, select
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy.orm import selectinload
 
@@ -54,13 +54,38 @@ class RoleRepository:
         self.db = db
 
     async def list_all(self) -> list[Role]:
-        return list((await self.db.execute(select(Role))).scalars().all())
+        stmt = select(Role).options(selectinload(Role.permissions).selectinload(RolePermission.permission))
+        return list((await self.db.execute(stmt)).scalars().all())
 
     async def get_by_id(self, role_id: uuid.UUID) -> Role | None:
-        return (await self.db.execute(select(Role).where(Role.id == role_id))).scalar_one_or_none()
+        stmt = (
+            select(Role)
+            .where(Role.id == role_id)
+            .options(selectinload(Role.permissions).selectinload(RolePermission.permission))
+        )
+        return (await self.db.execute(stmt)).scalar_one_or_none()
 
     def add(self, role: Role) -> None:
         self.db.add(role)
+
+
+class PermissionRepository:
+    def __init__(self, db: AsyncSession):
+        self.db = db
+
+    async def list_all(self) -> list[Permission]:
+        stmt = select(Permission).order_by(Permission.module, Permission.action)
+        return list((await self.db.execute(stmt)).scalars().all())
+
+
+class RolePermissionRepository:
+    def __init__(self, db: AsyncSession):
+        self.db = db
+
+    async def replace_for_role(self, role_id: uuid.UUID, permission_ids: list[uuid.UUID]) -> None:
+        await self.db.execute(delete(RolePermission).where(RolePermission.role_id == role_id))
+        for permission_id in permission_ids:
+            self.db.add(RolePermission(role_id=role_id, permission_id=permission_id))
 
 
 class OrganizationRepository:

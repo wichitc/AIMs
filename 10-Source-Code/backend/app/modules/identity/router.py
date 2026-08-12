@@ -6,17 +6,27 @@ from sqlalchemy.ext.asyncio import AsyncSession
 from app.common.response import PaginationMeta, ResponseEnvelope
 from app.core.database import get_db
 from app.core.dependencies import CurrentUser, get_current_user, require_permission
+from app.modules.identity.models import Role
 from app.modules.identity.schemas import (
     LoginRequest,
     OrganizationCreate,
     OrganizationRead,
+    PermissionRead,
     RoleCreate,
+    RolePermissionsUpdate,
     RoleRead,
     TokenResponse,
     UserCreate,
     UserRead,
 )
 from app.modules.identity.service import AuthService, OrganizationService, RoleService, UserService
+
+
+def _role_read(role: Role) -> RoleRead:
+    return RoleRead(
+        id=role.id, name=role.name, description=role.description, is_system_role=role.is_system_role,
+        permission_codes=[rp.permission.code for rp in role.permissions],
+    )
 
 router = APIRouter(tags=["Identity & Access Management"])
 
@@ -58,7 +68,7 @@ async def create_user(
     db: AsyncSession = Depends(get_db),
     current_user: CurrentUser = Depends(require_permission("user.create")),
 ):
-    user = await UserService(db).create_user(payload, actor_id=current_user.id)
+    user = await UserService(db).create_user(payload, uuid.UUID(current_user.org_id), actor_id=current_user.id)
     return ResponseEnvelope(data=UserRead.model_validate(user, from_attributes=True))
 
 
@@ -79,7 +89,7 @@ async def list_roles(
     current_user: CurrentUser = Depends(require_permission("role.read")),
 ):
     roles = await RoleService(db).list_roles()
-    return ResponseEnvelope(data=[RoleRead.model_validate(r, from_attributes=True) for r in roles])
+    return ResponseEnvelope(data=[_role_read(r) for r in roles])
 
 
 @router.post("/roles", response_model=ResponseEnvelope[RoleRead], status_code=201)
@@ -89,7 +99,27 @@ async def create_role(
     current_user: CurrentUser = Depends(require_permission("role.create")),
 ):
     role = await RoleService(db).create_role(payload, actor_id=current_user.id)
-    return ResponseEnvelope(data=RoleRead.model_validate(role, from_attributes=True))
+    return ResponseEnvelope(data=_role_read(role))
+
+
+@router.get("/permissions", response_model=ResponseEnvelope[list[PermissionRead]])
+async def list_permissions(
+    db: AsyncSession = Depends(get_db),
+    current_user: CurrentUser = Depends(require_permission("role.read")),
+):
+    permissions = await RoleService(db).list_permissions()
+    return ResponseEnvelope(data=[PermissionRead.model_validate(p, from_attributes=True) for p in permissions])
+
+
+@router.put("/roles/{role_id}/permissions", response_model=ResponseEnvelope[RoleRead])
+async def update_role_permissions(
+    role_id: uuid.UUID,
+    payload: RolePermissionsUpdate,
+    db: AsyncSession = Depends(get_db),
+    current_user: CurrentUser = Depends(require_permission("role.create")),
+):
+    role = await RoleService(db).update_role_permissions(role_id, payload.permission_ids, actor_id=current_user.id)
+    return ResponseEnvelope(data=_role_read(role))
 
 
 @router.get("/organizations", response_model=ResponseEnvelope[list[OrganizationRead]])

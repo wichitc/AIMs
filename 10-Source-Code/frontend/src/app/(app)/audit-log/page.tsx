@@ -39,6 +39,9 @@ const ENTITY_TYPES = [
   "RiskAssessment",
   "Document",
   "ThicknessRecord",
+  "User",
+  "Role",
+  "Organization",
 ];
 
 const ACTION_COLOR: Record<string, string> = {

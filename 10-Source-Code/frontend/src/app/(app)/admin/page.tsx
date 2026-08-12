@@ -3,6 +3,7 @@
 import { useState, type FormEvent } from "react";
 import { useApiQuery } from "@/lib/use-api-query";
 import { apiClient, ApiError } from "@/lib/api-client";
+import { useAuth } from "@/lib/auth-context";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -291,6 +292,7 @@ function NewOrganizationForm({ onCreated }: { onCreated: () => void }) {
 }
 
 export default function AdminPage() {
+  const { user: currentUser } = useAuth();
   const users = useApiQuery<UserRow[]>("/users", { page_size: 100 });
   const roles = useApiQuery<RoleRow[]>("/roles");
   const organizations = useApiQuery<OrganizationRow[]>("/organizations");
@@ -319,6 +321,7 @@ export default function AdminPage() {
                 <TableHead>Email</TableHead>
                 <TableHead>Roles</TableHead>
                 <TableHead>Active</TableHead>
+                <TableHead></TableHead>
               </TableRow>
             </TableHeader>
             <TableBody>
@@ -329,6 +332,23 @@ export default function AdminPage() {
                   <TableCell>{u.email}</TableCell>
                   <TableCell>{u.roles.join(", ") || "—"}</TableCell>
                   <TableCell>{u.is_active ? "Yes" : "No"}</TableCell>
+                  <TableCell>
+                    <Button
+                      size="sm"
+                      variant="outline"
+                      disabled={u.id === currentUser?.id}
+                      onClick={async () => {
+                        try {
+                          await apiClient.put(`/users/${u.id}`, { is_active: !u.is_active });
+                          users.refetch();
+                        } catch (err) {
+                          alert(err instanceof ApiError ? err.message : "Failed to update user");
+                        }
+                      }}
+                    >
+                      {u.is_active ? "Deactivate" : "Activate"}
+                    </Button>
+                  </TableCell>
                 </TableRow>
               ))}
             </TableBody>

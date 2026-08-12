@@ -18,7 +18,14 @@ from app.modules.identity.repository import (
     RoleRepository,
     UserRepository,
 )
-from app.modules.identity.schemas import OrganizationCreate, RoleCreate, TokenResponse, UserCreate, UserRead
+from app.modules.identity.schemas import (
+    OrganizationCreate,
+    RoleCreate,
+    TokenResponse,
+    UserCreate,
+    UserRead,
+    UserUpdate,
+)
 
 
 class AuthService:
@@ -94,6 +101,19 @@ class UserService:
         user = await self.users.get_by_id(user_id)
         if not user:
             raise NotFoundError(f"User {user_id} not found")
+        return user
+
+    async def update_user(self, user_id: uuid.UUID, payload: UserUpdate, actor_id: str | None) -> User:
+        user = await self.get_user(user_id)
+        changes = payload.model_dump(exclude_unset=True)
+        for field, value in changes.items():
+            setattr(user, field, value)
+
+        await write_audit_log(
+            self.db, user_id=actor_id, org_id=str(user.org_id), action="Update", entity_type="User",
+            entity_id=user.id, new_value=changes,
+        )
+        await self.db.commit()
         return user
 
     async def list_users(self, org_id: uuid.UUID | None, page: int, page_size: int):

@@ -6,7 +6,7 @@ from sqlalchemy.ext.asyncio import AsyncSession
 from app.common.response import PaginationMeta, ResponseEnvelope
 from app.core.database import get_db
 from app.core.dependencies import CurrentUser, get_current_user, require_permission
-from app.modules.identity.models import Role
+from app.modules.identity.models import Role, User
 from app.modules.identity.schemas import (
     LoginRequest,
     OrganizationCreate,
@@ -18,6 +18,7 @@ from app.modules.identity.schemas import (
     TokenResponse,
     UserCreate,
     UserRead,
+    UserUpdate,
 )
 from app.modules.identity.service import AuthService, OrganizationService, RoleService, UserService
 
@@ -26,6 +27,14 @@ def _role_read(role: Role) -> RoleRead:
     return RoleRead(
         id=role.id, name=role.name, description=role.description, is_system_role=role.is_system_role,
         permission_codes=[rp.permission.code for rp in role.permissions],
+    )
+
+
+def _user_read(user: User) -> UserRead:
+    return UserRead(
+        id=user.id, org_id=user.org_id, username=user.username, email=user.email,
+        full_name=user.full_name, is_active=user.is_active,
+        roles=[ur.role.name for ur in user.roles],
     )
 
 router = APIRouter(tags=["Identity & Access Management"])
@@ -70,6 +79,17 @@ async def create_user(
 ):
     user = await UserService(db).create_user(payload, uuid.UUID(current_user.org_id), actor_id=current_user.id)
     return ResponseEnvelope(data=UserRead.model_validate(user, from_attributes=True))
+
+
+@router.put("/users/{user_id}", response_model=ResponseEnvelope[UserRead])
+async def update_user(
+    user_id: uuid.UUID,
+    payload: UserUpdate,
+    db: AsyncSession = Depends(get_db),
+    current_user: CurrentUser = Depends(require_permission("user.create")),
+):
+    user = await UserService(db).update_user(user_id, payload, actor_id=current_user.id)
+    return ResponseEnvelope(data=_user_read(user))
 
 
 @router.get("/users/me", response_model=ResponseEnvelope[UserRead])

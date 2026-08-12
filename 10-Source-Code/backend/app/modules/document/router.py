@@ -160,6 +160,28 @@ async def upload_document(
     return ResponseEnvelope(data=DocumentRead.model_validate(doc, from_attributes=True))
 
 
+@router.delete("/documents/{document_id}", response_model=ResponseEnvelope[None])
+async def delete_document(
+    document_id: uuid.UUID,
+    db: AsyncSession = Depends(get_db),
+    current_user: CurrentUser = Depends(require_permission("document.create")),
+):
+    doc = (
+        await db.execute(select(Document).where(Document.id == document_id, Document.is_deleted.is_(False)))
+    ).scalar_one_or_none()
+    if not doc:
+        raise NotFoundError(f"Document {document_id} not found")
+
+    doc.is_deleted = True
+    doc.deleted_at = datetime.now(timezone.utc)
+    await write_audit_log(
+        db, user_id=current_user.id, org_id=current_user.org_id, action="Delete", entity_type="Document",
+        entity_id=doc.id, new_value={"file_name": doc.file_name},
+    )
+    await db.commit()
+    return ResponseEnvelope(data=None)
+
+
 @router.get("/documents/{document_id}/download")
 async def download_document(
     document_id: uuid.UUID,

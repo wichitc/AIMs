@@ -2,7 +2,7 @@
 
 import Link from "next/link";
 import { useApiQuery } from "@/lib/use-api-query";
-import { downloadFile, ApiError } from "@/lib/api-client";
+import { apiClient, downloadFile, ApiError } from "@/lib/api-client";
 import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
@@ -23,6 +23,16 @@ export default function DocumentsPage() {
       await downloadFile(`/documents/${doc.id}/download`, doc.file_name);
     } catch (err) {
       alert(err instanceof ApiError ? err.message : "Download failed");
+    }
+  }
+
+  async function handleDelete(doc: AimsDocument) {
+    if (!window.confirm(`Delete "${doc.file_name}"? This cannot be undone from the UI.`)) return;
+    try {
+      await apiClient.del(`/documents/${doc.id}`);
+      documents.refetch();
+    } catch (err) {
+      alert(err instanceof ApiError ? err.message : "Delete failed");
     }
   }
 
@@ -59,9 +69,12 @@ export default function DocumentsPage() {
                   <TableCell>v{doc.version}</TableCell>
                   <TableCell>{formatSize(doc.file_size_bytes)}</TableCell>
                   <TableCell>{new Date(doc.uploaded_at).toLocaleDateString()}</TableCell>
-                  <TableCell>
+                  <TableCell className="flex gap-2">
                     <Button size="sm" variant="outline" onClick={() => handleDownload(doc)}>
                       Download
+                    </Button>
+                    <Button size="sm" variant="destructive" onClick={() => handleDelete(doc)}>
+                      Delete
                     </Button>
                   </TableCell>
                 </TableRow>

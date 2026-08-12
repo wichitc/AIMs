@@ -62,7 +62,9 @@ class AssetCreate(BaseModel):
 
 class AssetUpdate(BaseModel):
     name: str | None = None
-    status: str | None = None
+    status: str | None = Field(
+        default=None, pattern="^(Design|Construction|Commissioning|Operating|Inactive|Decommissioned)$"
+    )
     design_pressure_bar: float | None = None
     design_temperature_c: float | None = None
 

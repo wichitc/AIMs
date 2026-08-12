@@ -1,17 +1,111 @@
 "use client";
 
-import { useState } from "react";
+import { useState, type FormEvent } from "react";
 import { useApiQuery } from "@/lib/use-api-query";
+import { apiClient, ApiError } from "@/lib/api-client";
 import { AddEquipmentForm } from "@/components/asset/AddEquipmentForm";
 import { CorrosionPanel } from "@/components/asset/CorrosionPanel";
 import { CriticalityPanel } from "@/components/asset/CriticalityPanel";
 import { Card, CardContent } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
+import { Select } from "@/components/ui/select";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { statusColor } from "@/lib/utils";
-import type { Asset, Equipment, RiskAssessment } from "@/lib/types";
+import type { Asset, AssetStatus, Equipment, RiskAssessment } from "@/lib/types";
+
+const ASSET_STATUSES: AssetStatus[] = [
+  "Design",
+  "Construction",
+  "Commissioning",
+  "Operating",
+  "Inactive",
+  "Decommissioned",
+];
+
+function EditAssetForm({ asset, onSaved, onCancel }: { asset: Asset; onSaved: () => void; onCancel: () => void }) {
+  const [name, setName] = useState(asset.name);
+  const [status, setStatus] = useState<AssetStatus>(asset.status);
+  const [designPressure, setDesignPressure] = useState(asset.design_pressure_bar?.toString() ?? "");
+  const [designTemperature, setDesignTemperature] = useState(asset.design_temperature_c?.toString() ?? "");
+  const [isSubmitting, setIsSubmitting] = useState(false);
+  const [error, setError] = useState<string | null>(null);
+
+  async function handleSubmit(e: FormEvent) {
+    e.preventDefault();
+    setError(null);
+    setIsSubmitting(true);
+    try {
+      await apiClient.put(`/assets/${asset.id}`, {
+        name,
+        status,
+        design_pressure_bar: designPressure === "" ? undefined : Number(designPressure),
+        design_temperature_c: designTemperature === "" ? undefined : Number(designTemperature),
+      });
+      onSaved();
+    } catch (err) {
+      setError(err instanceof ApiError ? err.message : "Failed to update asset");
+    } finally {
+      setIsSubmitting(false);
+    }
+  }
+
+  return (
+    <form onSubmit={handleSubmit} className="flex flex-wrap items-end gap-3">
+      <div>
+        <label className="mb-1 block text-sm font-medium" htmlFor="editName">
+          Name
+        </label>
+        <Input id="editName" value={name} onChange={(e) => setName(e.target.value)} required />
+      </div>
+      <div>
+        <label className="mb-1 block text-sm font-medium" htmlFor="editStatus">
+          Status
+        </label>
+        <Select id="editStatus" value={status} onChange={(e) => setStatus(e.target.value as AssetStatus)}>
+          {ASSET_STATUSES.map((s) => (
+            <option key={s} value={s}>
+              {s}
+            </option>
+          ))}
+        </Select>
+      </div>
+      <div>
+        <label className="mb-1 block text-sm font-medium" htmlFor="editDesignPressure">
+          Design Pressure (bar)
+        </label>
+        <Input
+          id="editDesignPressure"
+          type="number"
+          step="0.1"
+          value={designPressure}
+          onChange={(e) => setDesignPressure(e.target.value)}
+        />
+      </div>
+      <div>
+        <label className="mb-1 block text-sm font-medium" htmlFor="editDesignTemperature">
+          Design Temperature (°C)
+        </label>
+        <Input
+          id="editDesignTemperature"
+          type="number"
+          step="0.1"
+          value={designTemperature}
+          onChange={(e) => setDesignTemperature(e.target.value)}
+        />
+      </div>
+      <Button type="submit" disabled={isSubmitting}>
+        {isSubmitting ? "Saving..." : "Save"}
+      </Button>
+      <Button type="button" variant="outline" onClick={onCancel}>
+        Cancel
+      </Button>
+      {error && <p className="w-full text-sm text-destructive">{error}</p>}
+    </form>
+  );
+}
 
 export default function AssetDetailPage({ params }: { params: { assetId: string } }) {
   const { assetId } = params;
@@ -19,6 +113,7 @@ export default function AssetDetailPage({ params }: { params: { assetId: string 
   const equipment = useApiQuery<Equipment[]>(`/assets/${assetId}/equipment`);
   const risks = useApiQuery<RiskAssessment[]>("/risk-assessments", { asset_id: assetId });
   const [showAddEquipment, setShowAddEquipment] = useState(false);
+  const [isEditing, setIsEditing] = useState(false);
 
   if (asset.isLoading) return <p className="text-muted-foreground">Loading asset…</p>;
   if (asset.error || !asset.data) return <p className="text-destructive">{asset.error ?? "Asset not found"}</p>;
@@ -45,31 +140,51 @@ export default function AssetDetailPage({ params }: { params: { assetId: string 
 
         <TabsContent value="overview">
           <Card>
-            <CardContent className="grid grid-cols-2 gap-4 pt-4 text-sm md:grid-cols-3">
-              <div>
-                <div className="text-muted-foreground">Design Code</div>
-                <div>{data.design_code ?? "—"}</div>
-              </div>
-              <div>
-                <div className="text-muted-foreground">Install Date</div>
-                <div>{data.install_date ?? "—"}</div>
-              </div>
-              <div>
-                <div className="text-muted-foreground">Status</div>
-                <div>{data.status}</div>
-              </div>
-              <div>
-                <div className="text-muted-foreground">Design Pressure</div>
-                <div>{data.design_pressure_bar != null ? `${data.design_pressure_bar} bar` : "—"}</div>
-              </div>
-              <div>
-                <div className="text-muted-foreground">Design Temperature</div>
-                <div>{data.design_temperature_c != null ? `${data.design_temperature_c} °C` : "—"}</div>
-              </div>
-              <div>
-                <div className="text-muted-foreground">Material</div>
-                <div>{data.material ?? "—"}</div>
-              </div>
+            <CardContent className="flex flex-col gap-4 pt-4">
+              {isEditing ? (
+                <EditAssetForm
+                  asset={data}
+                  onSaved={() => {
+                    setIsEditing(false);
+                    asset.refetch();
+                  }}
+                  onCancel={() => setIsEditing(false)}
+                />
+              ) : (
+                <>
+                  <div className="flex justify-end">
+                    <Button size="sm" variant="outline" onClick={() => setIsEditing(true)}>
+                      Edit
+                    </Button>
+                  </div>
+                  <div className="grid grid-cols-2 gap-4 text-sm md:grid-cols-3">
+                    <div>
+                      <div className="text-muted-foreground">Design Code</div>
+                      <div>{data.design_code ?? "—"}</div>
+                    </div>
+                    <div>
+                      <div className="text-muted-foreground">Install Date</div>
+                      <div>{data.install_date ?? "—"}</div>
+                    </div>
+                    <div>
+                      <div className="text-muted-foreground">Status</div>
+                      <div>{data.status}</div>
+                    </div>
+                    <div>
+                      <div className="text-muted-foreground">Design Pressure</div>
+                      <div>{data.design_pressure_bar != null ? `${data.design_pressure_bar} bar` : "—"}</div>
+                    </div>
+                    <div>
+                      <div className="text-muted-foreground">Design Temperature</div>
+                      <div>{data.design_temperature_c != null ? `${data.design_temperature_c} °C` : "—"}</div>
+                    </div>
+                    <div>
+                      <div className="text-muted-foreground">Material</div>
+                      <div>{data.material ?? "—"}</div>
+                    </div>
+                  </div>
+                </>
+              )}
             </CardContent>
           </Card>
         </TabsContent>

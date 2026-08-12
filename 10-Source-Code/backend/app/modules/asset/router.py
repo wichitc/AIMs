@@ -11,6 +11,7 @@ from app.modules.asset.schemas import (
     AssetClassRead,
     AssetCreate,
     AssetRead,
+    AssetUpdate,
     CriticalityCreate,
     CriticalityRead,
     EquipmentCreate,
@@ -58,6 +59,17 @@ async def get_asset(
     current_user: CurrentUser = Depends(require_permission("asset.read")),
 ):
     asset = await AssetService(db).get_asset(asset_id)
+    return ResponseEnvelope(data=AssetRead.model_validate(asset, from_attributes=True))
+
+
+@router.put("/assets/{asset_id}", response_model=ResponseEnvelope[AssetRead])
+async def update_asset(
+    asset_id: uuid.UUID,
+    payload: AssetUpdate,
+    db: AsyncSession = Depends(get_db),
+    current_user: CurrentUser = Depends(require_permission("asset.update")),
+):
+    asset = await AssetService(db).update_asset(asset_id, payload, current_user.id)
     return ResponseEnvelope(data=AssetRead.model_validate(asset, from_attributes=True))
 
 

@@ -15,6 +15,7 @@ from app.modules.asset.repository import (
 from app.modules.asset.schemas import (
     AssetClassCreate,
     AssetCreate,
+    AssetUpdate,
     CriticalityCreate,
     EquipmentCreate,
     LocationCreate,
@@ -104,6 +105,19 @@ class AssetService:
         asset = await self.assets.get_by_id(asset_id)
         if not asset:
             raise NotFoundError(f"Asset {asset_id} not found")
+        return asset
+
+    async def update_asset(self, asset_id: uuid.UUID, payload: AssetUpdate, actor_id: str | None) -> Asset:
+        asset = await self.get_asset(asset_id)
+        changes = payload.model_dump(exclude_unset=True)
+        for field, value in changes.items():
+            setattr(asset, field, value)
+
+        await write_audit_log(
+            self.db, user_id=actor_id, org_id=str(asset.org_id), action="Update", entity_type="Asset",
+            entity_id=asset.id, new_value=changes,
+        )
+        await self.db.commit()
         return asset
 
     async def list_assets(self, org_id: uuid.UUID, page: int, page_size: int, **filters):

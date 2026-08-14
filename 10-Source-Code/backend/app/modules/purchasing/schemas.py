@@ -1,4 +1,5 @@
 import uuid
+from datetime import date
 
 from pydantic import BaseModel, Field
 
@@ -65,3 +66,75 @@ class SupplierRead(BaseModel):
 class SupplierBlockUpdate(BaseModel):
     is_blocked: bool
     block_reason: str | None = None
+
+
+class PurchasingInfoRecordCreate(BaseModel):
+    material_id: uuid.UUID
+    supplier_id: uuid.UUID
+    price: float = Field(gt=0)
+    lead_time_days: int | None = Field(default=None, ge=0)
+    valid_from: date | None = None
+    valid_to: date | None = None
+
+
+class PurchasingInfoRecordRead(BaseModel):
+    id: uuid.UUID
+    org_id: uuid.UUID
+    material_id: uuid.UUID
+    supplier_id: uuid.UUID
+    price: float
+    lead_time_days: int | None
+    valid_from: date | None
+    valid_to: date | None
+    is_active: bool
+
+    model_config = {"from_attributes": True}
+
+
+class SourceListEntryCreate(BaseModel):
+    material_id: uuid.UUID
+    supplier_id: uuid.UUID
+    is_fixed: bool = False
+    is_blocked: bool = False
+    valid_from: date | None = None
+    valid_to: date | None = None
+
+
+class SourceListEntryRead(BaseModel):
+    id: uuid.UUID
+    org_id: uuid.UUID
+    material_id: uuid.UUID
+    supplier_id: uuid.UUID
+    is_fixed: bool
+    is_blocked: bool
+    valid_from: date | None
+    valid_to: date | None
+
+    model_config = {"from_attributes": True}
+
+
+class QuotaArrangementCreate(BaseModel):
+    material_id: uuid.UUID
+    supplier_id: uuid.UUID
+    quota_percentage: float = Field(gt=0, le=100)
+    valid_from: date | None = None
+    valid_to: date | None = None
+
+
+class QuotaArrangementRead(BaseModel):
+    id: uuid.UUID
+    org_id: uuid.UUID
+    material_id: uuid.UUID
+    supplier_id: uuid.UUID
+    quota_percentage: float
+    valid_from: date | None
+    valid_to: date | None
+
+    model_config = {"from_attributes": True}
+
+
+class SourceCandidateRead(BaseModel):
+    supplier_id: uuid.UUID
+    rank: int
+    reason: str
+    price: float | None

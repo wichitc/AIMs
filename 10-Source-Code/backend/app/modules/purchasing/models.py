@@ -1,6 +1,7 @@
 import uuid
+from datetime import date
 
-from sqlalchemy import Boolean, ForeignKey, Numeric, String, UniqueConstraint
+from sqlalchemy import Boolean, Date, ForeignKey, Numeric, String, UniqueConstraint
 from sqlalchemy.dialects.postgresql import UUID
 from sqlalchemy.orm import Mapped, mapped_column
 
@@ -48,3 +49,50 @@ class Supplier(Base, UUIDMixin, AuditMixin, SoftDeleteMixin):
     is_active: Mapped[bool] = mapped_column(Boolean, default=True, nullable=False)
     is_blocked: Mapped[bool] = mapped_column(Boolean, default=False, nullable=False)
     block_reason: Mapped[str | None] = mapped_column(String(300))
+
+
+class PurchasingInfoRecord(Base, UUIDMixin, AuditMixin):
+    """Supplier-material commercial relationship (SAP MM FR-005, simplified — one price per
+    record, no separate conditions/condition_scales quantity-break tables)."""
+
+    __tablename__ = "purchasing_info_record"
+
+    org_id: Mapped[uuid.UUID] = mapped_column(UUID(as_uuid=True), ForeignKey("organization.id"), nullable=False)
+    material_id: Mapped[uuid.UUID] = mapped_column(UUID(as_uuid=True), ForeignKey("material.id"), nullable=False)
+    supplier_id: Mapped[uuid.UUID] = mapped_column(UUID(as_uuid=True), ForeignKey("supplier.id"), nullable=False)
+    price: Mapped[float] = mapped_column(Numeric(14, 2), nullable=False)
+    lead_time_days: Mapped[int | None] = mapped_column()
+    valid_from: Mapped[date | None] = mapped_column(Date)
+    valid_to: Mapped[date | None] = mapped_column(Date)
+    is_active: Mapped[bool] = mapped_column(Boolean, default=True, nullable=False)
+
+
+class SourceListEntry(Base, UUIDMixin, AuditMixin):
+    """Eligible/fixed/blocked supplier declaration for a material (SAP MM FR-009
+    source_list_entries, simplified — one org scope, no plant-level shadowing)."""
+
+    __tablename__ = "source_list_entry"
+
+    org_id: Mapped[uuid.UUID] = mapped_column(UUID(as_uuid=True), ForeignKey("organization.id"), nullable=False)
+    material_id: Mapped[uuid.UUID] = mapped_column(UUID(as_uuid=True), ForeignKey("material.id"), nullable=False)
+    supplier_id: Mapped[uuid.UUID] = mapped_column(UUID(as_uuid=True), ForeignKey("supplier.id"), nullable=False)
+    is_fixed: Mapped[bool] = mapped_column(Boolean, default=False, nullable=False)
+    is_blocked: Mapped[bool] = mapped_column(Boolean, default=False, nullable=False)
+    valid_from: Mapped[date | None] = mapped_column(Date)
+    valid_to: Mapped[date | None] = mapped_column(Date)
+
+
+class QuotaArrangement(Base, UUIDMixin, AuditMixin):
+    """Static supplier-split preference for a material (SAP MM FR-009 quota_arrangements,
+    simplified to a fixed percentage weight — no running allocated_qty consumption tracking
+    across POs, which would require quota state to update on every PO conversion; deferred to
+    a later stage if actual rotation-by-consumption is needed)."""
+
+    __tablename__ = "quota_arrangement"
+
+    org_id: Mapped[uuid.UUID] = mapped_column(UUID(as_uuid=True), ForeignKey("organization.id"), nullable=False)
+    material_id: Mapped[uuid.UUID] = mapped_column(UUID(as_uuid=True), ForeignKey("material.id"), nullable=False)
+    supplier_id: Mapped[uuid.UUID] = mapped_column(UUID(as_uuid=True), ForeignKey("supplier.id"), nullable=False)
+    quota_percentage: Mapped[float] = mapped_column(Numeric(5, 2), nullable=False)
+    valid_from: Mapped[date | None] = mapped_column(Date)
+    valid_to: Mapped[date | None] = mapped_column(Date)

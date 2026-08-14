@@ -44,6 +44,9 @@ const ENTITY_TYPES = [
   "Organization",
   "Material",
   "Supplier",
+  "PurchasingInfoRecord",
+  "SourceListEntry",
+  "QuotaArrangement",
 ];
 
 const ACTION_COLOR: Record<string, string> = {

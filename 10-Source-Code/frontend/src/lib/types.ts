@@ -233,6 +233,46 @@ export interface Supplier {
   block_reason: string | null;
 }
 
+export interface PurchasingInfoRecord {
+  id: string;
+  org_id: string;
+  material_id: string;
+  supplier_id: string;
+  price: number;
+  lead_time_days: number | null;
+  valid_from: string | null;
+  valid_to: string | null;
+  is_active: boolean;
+}
+
+export interface SourceListEntry {
+  id: string;
+  org_id: string;
+  material_id: string;
+  supplier_id: string;
+  is_fixed: boolean;
+  is_blocked: boolean;
+  valid_from: string | null;
+  valid_to: string | null;
+}
+
+export interface QuotaArrangement {
+  id: string;
+  org_id: string;
+  material_id: string;
+  supplier_id: string;
+  quota_percentage: number;
+  valid_from: string | null;
+  valid_to: string | null;
+}
+
+export interface SourceCandidate {
+  supplier_id: string;
+  rank: number;
+  reason: string;
+  price: number | null;
+}
+
 export interface AimsDocument {
   id: string;
   asset_id: string | null;

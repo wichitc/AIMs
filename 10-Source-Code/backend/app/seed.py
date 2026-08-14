@@ -36,6 +36,7 @@ PERMISSION_CODES = [
     "audit.read",
     "material.read", "material.create",
     "supplier.read", "supplier.create",
+    "sourcing.read", "sourcing.create",
     "ai.query", "ai.generate", "ai.read",
 ]
 

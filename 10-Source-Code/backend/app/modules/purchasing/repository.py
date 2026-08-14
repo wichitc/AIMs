@@ -2,9 +2,12 @@ import uuid
 
 from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
+from sqlalchemy.orm import selectinload
 
 from app.modules.purchasing.models import (
     Material,
+    PurchaseRequisition,
+    PurchaseRequisitionItem,
     PurchasingInfoRecord,
     QuotaArrangement,
     SourceListEntry,
@@ -92,3 +95,33 @@ class QuotaArrangementRepository:
 
     def add(self, arrangement: QuotaArrangement) -> None:
         self.db.add(arrangement)
+
+
+class PurchaseRequisitionRepository:
+    def __init__(self, db: AsyncSession):
+        self.db = db
+
+    async def list_all(
+        self, org_id: uuid.UUID, status: str | None, offset: int, limit: int
+    ) -> tuple[list[PurchaseRequisition], int]:
+        stmt = select(PurchaseRequisition).where(PurchaseRequisition.org_id == org_id)
+        if status:
+            stmt = stmt.where(PurchaseRequisition.status == status)
+        total = len((await self.db.execute(stmt)).scalars().all())
+        stmt = stmt.offset(offset).limit(limit).options(selectinload(PurchaseRequisition.items))
+        rows = (await self.db.execute(stmt)).scalars().all()
+        return list(rows), total
+
+    async def get_by_id(self, requisition_id: uuid.UUID) -> PurchaseRequisition | None:
+        stmt = (
+            select(PurchaseRequisition)
+            .where(PurchaseRequisition.id == requisition_id)
+            .options(selectinload(PurchaseRequisition.items))
+        )
+        return (await self.db.execute(stmt)).scalar_one_or_none()
+
+    def add(self, requisition: PurchaseRequisition) -> None:
+        self.db.add(requisition)
+
+    def add_item(self, item: PurchaseRequisitionItem) -> None:
+        self.db.add(item)

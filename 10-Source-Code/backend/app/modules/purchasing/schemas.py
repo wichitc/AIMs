@@ -1,5 +1,5 @@
 import uuid
-from datetime import date
+from datetime import date, datetime
 
 from pydantic import BaseModel, Field
 
@@ -138,3 +138,51 @@ class SourceCandidateRead(BaseModel):
     rank: int
     reason: str
     price: float | None
+
+
+class PurchaseRequisitionItemCreate(BaseModel):
+    material_id: uuid.UUID
+    quantity: float = Field(gt=0)
+    estimated_price: float | None = Field(default=None, gt=0)
+    required_date: date | None = None
+
+
+class PurchaseRequisitionItemRead(BaseModel):
+    id: uuid.UUID
+    line_no: int
+    material_id: uuid.UUID
+    quantity: float
+    estimated_price: float | None
+    required_date: date | None
+
+    model_config = {"from_attributes": True}
+
+
+class PurchaseRequisitionCreate(BaseModel):
+    # org_id/requester_id are deliberately absent — derived server-side from the caller's JWT.
+    requested_date: date
+    required_date: date | None = None
+    maintenance_order_id: uuid.UUID | None = None
+    defect_id: uuid.UUID | None = None
+    items: list[PurchaseRequisitionItemCreate] = Field(min_length=1)
+
+
+class PurchaseRequisitionRead(BaseModel):
+    id: uuid.UUID
+    org_id: uuid.UUID
+    requester_id: uuid.UUID
+    status: str
+    requested_date: date
+    required_date: date | None
+    maintenance_order_id: uuid.UUID | None
+    defect_id: uuid.UUID | None
+    decision_by: uuid.UUID | None
+    decision_at: datetime | None
+    decision_reason: str | None
+    items: list[PurchaseRequisitionItemRead]
+
+    model_config = {"from_attributes": True}
+
+
+class PurchaseRequisitionDecision(BaseModel):
+    reason: str | None = None

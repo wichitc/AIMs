@@ -17,6 +17,7 @@ import {
   PackageSearch,
   Truck,
   Route,
+  FileSpreadsheet,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 
@@ -30,6 +31,7 @@ const NAV_ITEMS = [
   { href: "/materials", label: "Materials", icon: PackageSearch },
   { href: "/suppliers", label: "Suppliers", icon: Truck },
   { href: "/sourcing", label: "Sourcing", icon: Route },
+  { href: "/purchase-requisitions", label: "Purchase Requisitions", icon: FileSpreadsheet },
   { href: "/documents", label: "Documents", icon: FileText },
   { href: "/copilot", label: "AI Copilot", icon: Sparkles },
   { href: "/audit-log", label: "Audit Log", icon: History },

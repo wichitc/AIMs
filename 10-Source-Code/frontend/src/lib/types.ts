@@ -273,6 +273,32 @@ export interface SourceCandidate {
   price: number | null;
 }
 
+export type PurchaseRequisitionStatus = "Draft" | "Submitted" | "Approved" | "Rejected" | "Withdrawn";
+
+export interface PurchaseRequisitionItem {
+  id: string;
+  line_no: number;
+  material_id: string;
+  quantity: number;
+  estimated_price: number | null;
+  required_date: string | null;
+}
+
+export interface PurchaseRequisition {
+  id: string;
+  org_id: string;
+  requester_id: string;
+  status: PurchaseRequisitionStatus;
+  requested_date: string;
+  required_date: string | null;
+  maintenance_order_id: string | null;
+  defect_id: string | null;
+  decision_by: string | null;
+  decision_at: string | null;
+  decision_reason: string | null;
+  items: PurchaseRequisitionItem[];
+}
+
 export interface AimsDocument {
   id: string;
   asset_id: string | null;

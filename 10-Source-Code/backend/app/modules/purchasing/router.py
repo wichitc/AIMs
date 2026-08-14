@@ -4,12 +4,15 @@ from datetime import date
 from fastapi import APIRouter, Depends
 from sqlalchemy.ext.asyncio import AsyncSession
 
-from app.common.response import ResponseEnvelope
+from app.common.response import PaginationMeta, ResponseEnvelope
 from app.core.database import get_db
 from app.core.dependencies import CurrentUser, require_permission
 from app.modules.purchasing.schemas import (
     MaterialCreate,
     MaterialRead,
+    PurchaseRequisitionCreate,
+    PurchaseRequisitionDecision,
+    PurchaseRequisitionRead,
     PurchasingInfoRecordCreate,
     PurchasingInfoRecordRead,
     QuotaArrangementCreate,
@@ -23,6 +26,7 @@ from app.modules.purchasing.schemas import (
 )
 from app.modules.purchasing.service import (
     MaterialService,
+    PurchaseRequisitionService,
     PurchasingInfoRecordService,
     QuotaArrangementService,
     SourceDeterminationService,
@@ -175,3 +179,91 @@ async def run_source_determination(
         uuid.UUID(current_user.org_id), material_id, as_of or date.today()
     )
     return ResponseEnvelope(data=[SourceCandidateRead.model_validate(c, from_attributes=True) for c in candidates])
+
+
+@router.get("/purchase-requisitions", response_model=ResponseEnvelope[list[PurchaseRequisitionRead]])
+async def list_purchase_requisitions(
+    status: str | None = None,
+    page: int = 1,
+    page_size: int = 20,
+    db: AsyncSession = Depends(get_db),
+    current_user: CurrentUser = Depends(require_permission("purchase_requisition.read")),
+):
+    requisitions, total = await PurchaseRequisitionService(db).list_requisitions(
+        uuid.UUID(current_user.org_id), status, page, page_size
+    )
+    return ResponseEnvelope(
+        data=[PurchaseRequisitionRead.model_validate(r, from_attributes=True) for r in requisitions],
+        meta=PaginationMeta(page=page, page_size=page_size, total=total),
+    )
+
+
+@router.post("/purchase-requisitions", response_model=ResponseEnvelope[PurchaseRequisitionRead], status_code=201)
+async def create_purchase_requisition(
+    payload: PurchaseRequisitionCreate,
+    db: AsyncSession = Depends(get_db),
+    current_user: CurrentUser = Depends(require_permission("purchase_requisition.create")),
+):
+    requisition = await PurchaseRequisitionService(db).create_requisition(
+        payload, uuid.UUID(current_user.org_id), current_user.id
+    )
+    return ResponseEnvelope(data=PurchaseRequisitionRead.model_validate(requisition, from_attributes=True))
+
+
+@router.get("/purchase-requisitions/{requisition_id}", response_model=ResponseEnvelope[PurchaseRequisitionRead])
+async def get_purchase_requisition(
+    requisition_id: uuid.UUID,
+    db: AsyncSession = Depends(get_db),
+    current_user: CurrentUser = Depends(require_permission("purchase_requisition.read")),
+):
+    requisition = await PurchaseRequisitionService(db).get_requisition(requisition_id)
+    return ResponseEnvelope(data=PurchaseRequisitionRead.model_validate(requisition, from_attributes=True))
+
+
+@router.post(
+    "/purchase-requisitions/{requisition_id}/submit", response_model=ResponseEnvelope[PurchaseRequisitionRead]
+)
+async def submit_purchase_requisition(
+    requisition_id: uuid.UUID,
+    db: AsyncSession = Depends(get_db),
+    current_user: CurrentUser = Depends(require_permission("purchase_requisition.create")),
+):
+    requisition = await PurchaseRequisitionService(db).submit(requisition_id, current_user.id)
+    return ResponseEnvelope(data=PurchaseRequisitionRead.model_validate(requisition, from_attributes=True))
+
+
+@router.post(
+    "/purchase-requisitions/{requisition_id}/approve", response_model=ResponseEnvelope[PurchaseRequisitionRead]
+)
+async def approve_purchase_requisition(
+    requisition_id: uuid.UUID,
+    db: AsyncSession = Depends(get_db),
+    current_user: CurrentUser = Depends(require_permission("purchase_requisition.approve")),
+):
+    requisition = await PurchaseRequisitionService(db).approve(requisition_id, current_user.id)
+    return ResponseEnvelope(data=PurchaseRequisitionRead.model_validate(requisition, from_attributes=True))
+
+
+@router.post(
+    "/purchase-requisitions/{requisition_id}/reject", response_model=ResponseEnvelope[PurchaseRequisitionRead]
+)
+async def reject_purchase_requisition(
+    requisition_id: uuid.UUID,
+    payload: PurchaseRequisitionDecision,
+    db: AsyncSession = Depends(get_db),
+    current_user: CurrentUser = Depends(require_permission("purchase_requisition.approve")),
+):
+    requisition = await PurchaseRequisitionService(db).reject(requisition_id, current_user.id, payload.reason)
+    return ResponseEnvelope(data=PurchaseRequisitionRead.model_validate(requisition, from_attributes=True))
+
+
+@router.post(
+    "/purchase-requisitions/{requisition_id}/withdraw", response_model=ResponseEnvelope[PurchaseRequisitionRead]
+)
+async def withdraw_purchase_requisition(
+    requisition_id: uuid.UUID,
+    db: AsyncSession = Depends(get_db),
+    current_user: CurrentUser = Depends(require_permission("purchase_requisition.create")),
+):
+    requisition = await PurchaseRequisitionService(db).withdraw(requisition_id, current_user.id)
+    return ResponseEnvelope(data=PurchaseRequisitionRead.model_validate(requisition, from_attributes=True))

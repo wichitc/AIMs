@@ -1,9 +1,9 @@
 import uuid
-from datetime import date
+from datetime import date, datetime
 
-from sqlalchemy import Boolean, Date, ForeignKey, Numeric, String, UniqueConstraint
+from sqlalchemy import Boolean, Date, DateTime, ForeignKey, Numeric, String, UniqueConstraint
 from sqlalchemy.dialects.postgresql import UUID
-from sqlalchemy.orm import Mapped, mapped_column
+from sqlalchemy.orm import Mapped, mapped_column, relationship
 
 from app.common.base_model import AuditMixin, SoftDeleteMixin, UUIDMixin
 from app.core.database import Base
@@ -96,3 +96,47 @@ class QuotaArrangement(Base, UUIDMixin, AuditMixin):
     quota_percentage: Mapped[float] = mapped_column(Numeric(5, 2), nullable=False)
     valid_from: Mapped[date | None] = mapped_column(Date)
     valid_to: Mapped[date | None] = mapped_column(Date)
+
+
+class PurchaseRequisition(Base, UUIDMixin, AuditMixin):
+    """Demand capture and single-step approval (SAP MM FR-006/FR-007, simplified — one
+    release step instead of a configurable multi-step delegation/escalation workflow engine,
+    matching AIMS's existing Defect/Risk/Asset approve pattern). Identified by id like every
+    other AIMS entity, not a configurable number-range engine.
+
+    maintenance_order_id/defect_id are an AIMS-specific integration point beyond the SAP MM
+    spec: a repair that needs parts can originate a PR directly."""
+
+    __tablename__ = "purchase_requisition"
+
+    org_id: Mapped[uuid.UUID] = mapped_column(UUID(as_uuid=True), ForeignKey("organization.id"), nullable=False)
+    requester_id: Mapped[uuid.UUID] = mapped_column(UUID(as_uuid=True), ForeignKey("user.id"), nullable=False)
+    status: Mapped[str] = mapped_column(String(20), nullable=False, default="Draft")
+    requested_date: Mapped[date] = mapped_column(Date, nullable=False)
+    required_date: Mapped[date | None] = mapped_column(Date)
+    maintenance_order_id: Mapped[uuid.UUID | None] = mapped_column(
+        UUID(as_uuid=True), ForeignKey("maintenance_order.id")
+    )
+    defect_id: Mapped[uuid.UUID | None] = mapped_column(UUID(as_uuid=True), ForeignKey("defect.id"))
+    decision_by: Mapped[uuid.UUID | None] = mapped_column(UUID(as_uuid=True), ForeignKey("user.id"))
+    decision_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True))
+    decision_reason: Mapped[str | None] = mapped_column(String(500))
+
+    items: Mapped[list["PurchaseRequisitionItem"]] = relationship(
+        back_populates="requisition", cascade="all, delete-orphan"
+    )
+
+
+class PurchaseRequisitionItem(Base, UUIDMixin, AuditMixin):
+    __tablename__ = "purchase_requisition_item"
+
+    purchase_requisition_id: Mapped[uuid.UUID] = mapped_column(
+        UUID(as_uuid=True), ForeignKey("purchase_requisition.id"), nullable=False
+    )
+    line_no: Mapped[int] = mapped_column(nullable=False)
+    material_id: Mapped[uuid.UUID] = mapped_column(UUID(as_uuid=True), ForeignKey("material.id"), nullable=False)
+    quantity: Mapped[float] = mapped_column(Numeric(14, 3), nullable=False)
+    estimated_price: Mapped[float | None] = mapped_column(Numeric(14, 2))
+    required_date: Mapped[date | None] = mapped_column(Date)
+
+    requisition: Mapped["PurchaseRequisition"] = relationship(back_populates="items")

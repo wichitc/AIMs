@@ -34,6 +34,8 @@ PERMISSION_CODES = [
     "maintenance.read", "maintenance.create", "maintenance.update",
     "document.read", "document.create",
     "audit.read",
+    "material.read", "material.create",
+    "supplier.read", "supplier.create",
     "ai.query", "ai.generate", "ai.read",
 ]
 

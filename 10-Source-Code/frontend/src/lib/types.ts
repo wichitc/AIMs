@@ -199,6 +199,40 @@ export interface MaintenanceOrder {
   cost_estimate: number | null;
 }
 
+// Purchasing & Inventory (SAP MM-inspired, see 01 SAP MM/docs) — Stage 1: master data.
+export type MaterialType = "SparePart" | "Consumable" | "RawMaterial" | "Service";
+
+export interface Material {
+  id: string;
+  org_id: string;
+  material_number: string;
+  name: string;
+  description: string | null;
+  material_type: MaterialType;
+  material_group: string | null;
+  base_uom: string;
+  moving_average_price: number | null;
+  min_stock_level: number | null;
+  is_active: boolean;
+}
+
+export interface Supplier {
+  id: string;
+  org_id: string;
+  supplier_number: string;
+  name: string;
+  tax_id: string | null;
+  country: string | null;
+  email: string | null;
+  phone: string | null;
+  address: string | null;
+  payment_terms: string | null;
+  currency: string;
+  is_active: boolean;
+  is_blocked: boolean;
+  block_reason: string | null;
+}
+
 export interface AimsDocument {
   id: string;
   asset_id: string | null;

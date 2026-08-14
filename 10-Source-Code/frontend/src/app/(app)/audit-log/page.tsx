@@ -42,6 +42,8 @@ const ENTITY_TYPES = [
   "User",
   "Role",
   "Organization",
+  "Material",
+  "Supplier",
 ];
 
 const ACTION_COLOR: Record<string, string> = {

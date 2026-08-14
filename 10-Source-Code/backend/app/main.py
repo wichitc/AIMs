@@ -12,6 +12,7 @@ from app.modules.document.router import router as document_router
 from app.modules.identity.router import router as identity_router
 from app.modules.inspection.router import router as inspection_router
 from app.modules.maintenance.router import router as maintenance_router
+from app.modules.purchasing.router import router as purchasing_router
 from app.modules.rbi.router import router as rbi_router
 
 
@@ -43,6 +44,7 @@ def create_app() -> FastAPI:
     app.include_router(maintenance_router, prefix=v1_prefix)
     app.include_router(document_router, prefix=v1_prefix)
     app.include_router(audit_log_router, prefix=v1_prefix)
+    app.include_router(purchasing_router, prefix=v1_prefix)
 
     @app.get("/health", tags=["System"])
     async def health_check():

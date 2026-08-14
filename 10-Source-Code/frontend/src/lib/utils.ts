@@ -11,26 +11,26 @@ export type Severity = "Low" | "Medium" | "High" | "Critical";
 export function riskColor(rank: RiskRank): string {
   switch (rank) {
     case "Low":
-      return "bg-emerald-100 text-emerald-800 border-emerald-200";
+      return "bg-status-success-bg text-status-success-text border-transparent";
     case "Medium":
-      return "bg-amber-100 text-amber-800 border-amber-200";
+      return "bg-status-warning-bg text-status-warning-text border-transparent";
     case "High":
-      return "bg-orange-100 text-orange-800 border-orange-200";
+      return "bg-status-warning-bg text-status-warning-text border-transparent";
     case "VeryHigh":
-      return "bg-red-100 text-red-800 border-red-200";
+      return "bg-status-danger-bg text-status-danger-text border-transparent";
   }
 }
 
 export function severityColor(severity: Severity): string {
   switch (severity) {
     case "Low":
-      return "bg-emerald-100 text-emerald-800 border-emerald-200";
+      return "bg-status-success-bg text-status-success-text border-transparent";
     case "Medium":
-      return "bg-amber-100 text-amber-800 border-amber-200";
+      return "bg-status-warning-bg text-status-warning-text border-transparent";
     case "High":
-      return "bg-orange-100 text-orange-800 border-orange-200";
+      return "bg-status-warning-bg text-status-warning-text border-transparent";
     case "Critical":
-      return "bg-red-100 text-red-800 border-red-200";
+      return "bg-status-danger-bg text-status-danger-text border-transparent";
   }
 }
 
@@ -40,15 +40,15 @@ export function statusColor(status: string): string {
     case "Closed":
     case "Approved":
     case "Active":
-      return "bg-emerald-100 text-emerald-800 border-emerald-200";
+      return "bg-status-success-bg text-status-success-text border-transparent";
     case "InProgress":
     case "Repair":
     case "Assessment":
-      return "bg-blue-100 text-blue-800 border-blue-200";
+      return "bg-status-info-bg text-status-info-text border-transparent";
     case "Overdue":
     case "Cancelled":
-      return "bg-red-100 text-red-800 border-red-200";
+      return "bg-status-danger-bg text-status-danger-text border-transparent";
     default:
-      return "bg-slate-100 text-slate-800 border-slate-200";
+      return "bg-status-neutral-bg text-status-neutral-text border-transparent";
   }
 }

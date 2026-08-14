@@ -99,7 +99,7 @@ export default function CopilotPage() {
                     {m.sources.map((s, si) => (
                       <span
                         key={si}
-                        className="rounded border border-border bg-background px-1.5 py-0.5 text-[10px] text-muted-foreground"
+                        className="rounded border border-border bg-card px-1.5 py-0.5 text-[10px] text-muted-foreground"
                       >
                         {s.type}:{s.id.slice(0, 8)}
                       </span>

@@ -20,10 +20,10 @@ type Status = MaintenanceOrder["status"];
 const COLUMNS: Status[] = ["Open", "InProgress", "Completed", "Cancelled"];
 
 const PRIORITY_COLOR: Record<MaintenanceOrder["priority"], string> = {
-  Low: "bg-slate-100 text-slate-800 border-slate-200",
-  Medium: "bg-amber-100 text-amber-800 border-amber-200",
-  High: "bg-orange-100 text-orange-800 border-orange-200",
-  Urgent: "bg-red-100 text-red-800 border-red-200",
+  Low: "bg-status-neutral-bg text-status-neutral-text border-transparent",
+  Medium: "bg-status-warning-bg text-status-warning-text border-transparent",
+  High: "bg-status-warning-bg text-status-warning-text border-transparent",
+  Urgent: "bg-status-danger-bg text-status-danger-text border-transparent",
 };
 
 export default function MaintenancePage() {
@@ -89,7 +89,7 @@ export default function MaintenancePage() {
                     <div>Assigned: {userById.get(order.assigned_to)?.full_name ?? order.assigned_to}</div>
                   )}
                   {order.defect_id && (
-                    <Badge className="w-fit bg-blue-100 text-blue-800 border-blue-200">From Defect</Badge>
+                    <Badge className="w-fit bg-status-info-bg text-status-info-text border-transparent">From Defect</Badge>
                   )}
                   <div className="flex flex-wrap gap-2">
                     {order.status === "Open" && (

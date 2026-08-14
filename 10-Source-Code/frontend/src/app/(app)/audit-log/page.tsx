@@ -45,9 +45,10 @@ const ENTITY_TYPES = [
 ];
 
 const ACTION_COLOR: Record<string, string> = {
-  Create: "bg-emerald-100 text-emerald-800 border-emerald-200",
-  Update: "bg-amber-100 text-amber-800 border-amber-200",
-  Delete: "bg-red-100 text-red-800 border-red-200",
+  Create: "bg-status-success-bg text-status-success-text border-transparent",
+  Update: "bg-status-warning-bg text-status-warning-text border-transparent",
+  Delete: "bg-status-danger-bg text-status-danger-text border-transparent",
+  Approve: "bg-status-info-bg text-status-info-text border-transparent",
 };
 
 function formatValue(value: Record<string, unknown> | null): string {

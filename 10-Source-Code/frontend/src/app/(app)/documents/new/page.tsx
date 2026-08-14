@@ -96,7 +96,7 @@ export default function NewDocumentPage() {
                 type="file"
                 accept={ALLOWED_EXTENSIONS.join(",")}
                 onChange={(e) => handleFileChange(e.target.files?.[0] ?? null)}
-                className="flex w-full rounded-md border border-border bg-background px-3 py-1.5 text-sm shadow-sm file:mr-3 file:rounded file:border-0 file:bg-muted file:px-2 file:py-1 file:text-sm"
+                className="flex w-full rounded-md border border-border-strong bg-card px-3 py-1.5 text-sm text-foreground shadow-sm file:mr-3 file:rounded file:border-0 file:bg-muted file:px-2 file:py-1 file:text-sm"
                 required
               />
             </div>

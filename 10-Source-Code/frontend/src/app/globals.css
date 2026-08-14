@@ -2,49 +2,104 @@
 @tailwind components;
 @tailwind utilities;
 
+/* Design tokens ported from 00 eGRC/frontend/src/app/globals.css — same palette (deep navy
+   brand, teal accent, light gray-blue page canvas with white raised cards), translated from
+   that project's Tailwind v4 hex custom properties into this project's Tailwind v3 HSL-triplet
+   convention (consumed as hsl(var(--x)) via tailwind.config.ts, shadcn/ui-style). */
 @layer base {
   :root {
-    --background: 0 0% 100%;
-    --foreground: 222 47% 11%;
-    --card: 0 0% 100%;
-    --card-foreground: 222 47% 11%;
-    --border: 214 32% 91%;
-    --primary: 221 83% 53%;
-    --primary-foreground: 210 40% 98%;
-    --muted: 210 40% 96%;
-    --muted-foreground: 215 16% 47%;
-    --destructive: 0 84% 60%;
-    --destructive-foreground: 210 40% 98%;
+    --background: 210 22% 96%; /* surface-subtle */
+    --foreground: 220 43% 11%; /* text-primary */
+    --card: 0 0% 100%; /* surface-raised */
+    --card-foreground: 220 43% 11%; /* text-primary */
+    --border: 218 17% 91%; /* border-default */
+    --border-strong: 217 16% 84%; /* border-strong */
+    --primary: 214 68% 14%; /* brand-primary (navy) */
+    --primary-foreground: 210 20% 98%; /* text-inverse */
+    --secondary: 215 41% 34%; /* brand-secondary */
+    --secondary-foreground: 210 20% 98%; /* text-inverse */
+    --accent: 181 81% 31%; /* brand-accent (teal) */
+    --accent-foreground: 210 20% 98%; /* text-inverse */
+    --muted: 210 22% 96%; /* surface-subtle, reused for hover/disabled surfaces */
+    --muted-foreground: 216 18% 34%; /* text-secondary */
+    --text-disabled: 218 15% 65%;
+    --destructive: 4 76% 40%; /* status-danger-text, used as a solid danger fill */
+    --destructive-foreground: 210 20% 98%;
+    --ring: 220 84% 56%; /* focus-ring */
     --radius: 0.5rem;
+
+    --status-info-bg: 214 100% 97%;
+    --status-info-text: 224 76% 48%;
+    --status-success-bg: 145 81% 96%;
+    --status-success-text: 155 97% 24%;
+    --status-warning-bg: 45 100% 96%;
+    --status-warning-text: 22 92% 37%;
+    --status-danger-bg: 5 86% 97%;
+    --status-danger-text: 4 76% 40%;
+    --status-neutral-bg: 216 24% 96%;
+    --status-neutral-text: 218 24% 27%;
+
+    --risk-low: 220 84% 56%;
+    --risk-medium: 22 92% 37%;
+    --risk-high: 32 95% 44%;
+    --risk-critical: 4 76% 40%;
   }
 
   [data-theme="dark"] {
-    --background: 222 47% 11%;
-    --foreground: 210 40% 98%;
-    --card: 222 47% 14%;
-    --card-foreground: 210 40% 98%;
-    --border: 217 33% 24%;
-    --primary: 217 91% 60%;
-    --primary-foreground: 222 47% 11%;
-    --muted: 217 33% 18%;
-    --muted-foreground: 215 20% 65%;
-    --destructive: 0 63% 51%;
-    --destructive-foreground: 210 40% 98%;
+    --background: 223 40% 10%; /* surface-subtle */
+    --foreground: 216 24% 96%; /* text-primary */
+    --card: 222 37% 12%; /* surface-raised */
+    --card-foreground: 216 24% 96%;
+    --border: 215 28% 17%; /* border-default */
+    --border-strong: 220 22% 24%; /* border-strong */
+    --primary-foreground: 210 20% 98%;
+    --secondary-foreground: 210 20% 98%;
+    --accent-foreground: 210 20% 98%;
+    --muted: 223 40% 10%;
+    --muted-foreground: 218 15% 65%; /* text-secondary */
+    --text-disabled: 221 13% 46%;
+    --destructive-foreground: 210 20% 98%;
+    --ring: 217 100% 68%; /* focus-ring */
+
+    --status-info-bg: 217 56% 16%;
+    --status-info-text: 216 100% 75%;
+    --status-success-bg: 158 54% 11%;
+    --status-success-text: 142 69% 58%;
+    --status-warning-bg: 41 66% 10%;
+    --status-warning-text: 43 96% 56%;
+    --status-danger-bg: 4 47% 12%;
+    --status-danger-text: 0 91% 71%;
+    --status-neutral-bg: 221 30% 15%;
+    --status-neutral-text: 213 27% 84%;
   }
 
   @media (prefers-color-scheme: dark) {
     :root:not([data-theme="light"]) {
-      --background: 222 47% 11%;
-      --foreground: 210 40% 98%;
-      --card: 222 47% 14%;
-      --card-foreground: 210 40% 98%;
-      --border: 217 33% 24%;
-      --primary: 217 91% 60%;
-      --primary-foreground: 222 47% 11%;
-      --muted: 217 33% 18%;
-      --muted-foreground: 215 20% 65%;
-      --destructive: 0 63% 51%;
-      --destructive-foreground: 210 40% 98%;
+      --background: 223 40% 10%;
+      --foreground: 216 24% 96%;
+      --card: 222 37% 12%;
+      --card-foreground: 216 24% 96%;
+      --border: 215 28% 17%;
+      --border-strong: 220 22% 24%;
+      --primary-foreground: 210 20% 98%;
+      --secondary-foreground: 210 20% 98%;
+      --accent-foreground: 210 20% 98%;
+      --muted: 223 40% 10%;
+      --muted-foreground: 218 15% 65%;
+      --text-disabled: 221 13% 46%;
+      --destructive-foreground: 210 20% 98%;
+      --ring: 217 100% 68%;
+
+      --status-info-bg: 217 56% 16%;
+      --status-info-text: 216 100% 75%;
+      --status-success-bg: 158 54% 11%;
+      --status-success-text: 142 69% 58%;
+      --status-warning-bg: 41 66% 10%;
+      --status-warning-text: 43 96% 56%;
+      --status-danger-bg: 4 47% 12%;
+      --status-danger-text: 0 91% 71%;
+      --status-neutral-bg: 221 30% 15%;
+      --status-neutral-text: 213 27% 84%;
     }
   }
 

@@ -198,7 +198,10 @@ export default function AuditLogPage() {
           </Table>
 
           <div className="mt-3 flex items-center justify-between text-sm text-muted-foreground">
-            <span>Page {page}</span>
+            <span>
+              Page {page}
+              {logs.meta ? ` of ${Math.max(1, Math.ceil(logs.meta.total / pageSize))} · ${logs.meta.total} total` : ""}
+            </span>
             <div className="flex gap-2">
               <button
                 type="button"
@@ -211,7 +214,7 @@ export default function AuditLogPage() {
               <button
                 type="button"
                 className="rounded-md border border-border px-2 py-1 disabled:opacity-50"
-                disabled={(logs.data?.length ?? 0) < pageSize}
+                disabled={logs.meta ? page * pageSize >= logs.meta.total : true}
                 onClick={() => setPage((p) => p + 1)}
               >
                 Next

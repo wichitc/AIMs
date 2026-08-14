@@ -36,7 +36,12 @@ interface RequestOptions {
 // either backend. This factory lets each service get its own base URL while sharing
 // every other concern (auth header, envelope unwrapping, 401 handling).
 function createApiClient(baseUrl: string) {
-  async function unwrap<T>(res: Response): Promise<T> {
+  // Every list endpoint returns pagination info in envelope.meta, but historically nothing
+  // in the app read it past this point — request<T>() returned only envelope.data, so every
+  // page either had no real page count or faked one. unwrapEnvelope() keeps meta around;
+  // request() still discards it (unchanged behavior for every existing caller), and
+  // requestWithMeta() is the opt-in path for callers that want the real total.
+  async function unwrapEnvelope<T>(res: Response): Promise<ResponseEnvelope<T>> {
     if (res.status === 401) {
       setToken(null);
       if (typeof window !== "undefined") window.location.href = "/login";
@@ -50,10 +55,10 @@ function createApiClient(baseUrl: string) {
       throw new ApiError(res.status, err?.code ?? "UNKNOWN_ERROR", err?.message ?? "Request failed", err?.details ?? []);
     }
 
-    return envelope.data as T;
+    return envelope;
   }
 
-  async function request<T>(path: string, options: RequestOptions = {}): Promise<T> {
+  async function fetchEnvelope<T>(path: string, options: RequestOptions = {}): Promise<ResponseEnvelope<T>> {
     const { method = "GET", body, query, skipAuth } = options;
 
     const url = new URL(`${baseUrl}${path}`);
@@ -73,7 +78,12 @@ function createApiClient(baseUrl: string) {
       body: body ? JSON.stringify(body) : undefined,
     });
 
-    return unwrap<T>(res);
+    return unwrapEnvelope<T>(res);
+  }
+
+  async function request<T>(path: string, options: RequestOptions = {}): Promise<T> {
+    const envelope = await fetchEnvelope<T>(path, options);
+    return envelope.data as T;
   }
 
   // multipart/form-data (file uploads) — deliberately does NOT set Content-Type; the
@@ -85,11 +95,16 @@ function createApiClient(baseUrl: string) {
     if (token) headers.Authorization = `Bearer ${token}`;
 
     const res = await fetch(`${baseUrl}${path}`, { method: "POST", headers, body: formData });
-    return unwrap<T>(res);
+    const envelope = await unwrapEnvelope<T>(res);
+    return envelope.data as T;
   }
 
   return {
     get: <T>(path: string, query?: RequestOptions["query"]) => request<T>(path, { method: "GET", query }),
+    // Opt-in variant for list pages that want the real pagination total instead of guessing
+    // from result length. Returns {data, meta} — meta is null for non-paginated endpoints.
+    getWithMeta: <T>(path: string, query?: RequestOptions["query"]) =>
+      fetchEnvelope<T>(path, { method: "GET", query }).then((e) => ({ data: e.data as T, meta: e.meta ?? null })),
     post: <T>(path: string, body?: unknown) => request<T>(path, { method: "POST", body }),
     put: <T>(path: string, body?: unknown) => request<T>(path, { method: "PUT", body }),
     del: <T>(path: string) => request<T>(path, { method: "DELETE" }),

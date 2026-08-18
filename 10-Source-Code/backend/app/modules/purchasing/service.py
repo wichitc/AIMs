@@ -7,18 +7,28 @@ from app.common.audit import write_audit_log
 from app.core.exceptions import BusinessRuleError, ConflictError, ForbiddenError, NotFoundError
 from app.modules.purchasing.models import (
     Material,
+    PurchaseOrder,
+    PurchaseOrderItem,
     PurchaseRequisition,
     PurchaseRequisitionItem,
     PurchasingInfoRecord,
+    Quotation,
+    QuotationItem,
     QuotaArrangement,
+    RFQ,
+    RFQSupplierInvite,
     SourceListEntry,
     Supplier,
 )
 from app.modules.purchasing.repository import (
     MaterialRepository,
+    PurchaseOrderRepository,
     PurchaseRequisitionRepository,
     PurchasingInfoRecordRepository,
     QuotaArrangementRepository,
+    QuotationRepository,
+    RFQRepository,
+    RFQSupplierInviteRepository,
     SourceListEntryRepository,
     SupplierRepository,
 )
@@ -27,6 +37,8 @@ from app.modules.purchasing.schemas import (
     PurchaseRequisitionCreate,
     PurchasingInfoRecordCreate,
     QuotaArrangementCreate,
+    QuotationCreate,
+    RFQCreate,
     SourceListEntryCreate,
     SupplierBlockUpdate,
     SupplierCreate,
@@ -315,3 +327,255 @@ class PurchaseRequisitionService:
         if str(requisition.requester_id) != actor_id:
             raise ForbiddenError("Only the requester can withdraw a purchase requisition")
         return await self._transition(requisition_id, "Withdrawn", actor_id)
+
+
+class RFQService:
+    """FR-008: released PR-to-RFQ lineage. Dispatch is symbolic (no real email/PDF output)."""
+
+    def __init__(self, db: AsyncSession):
+        self.db = db
+        self.repo = RFQRepository(db)
+        self.invites = RFQSupplierInviteRepository(db)
+        self.requisitions = PurchaseRequisitionRepository(db)
+
+    async def list_rfqs(self, org_id: uuid.UUID) -> list[RFQ]:
+        return await self.repo.list_all(org_id)
+
+    async def get_rfq(self, rfq_id: uuid.UUID) -> RFQ:
+        rfq = await self.repo.get_by_id(rfq_id)
+        if not rfq:
+            raise NotFoundError(f"RFQ {rfq_id} not found")
+        return rfq
+
+    async def create_rfq(self, payload: RFQCreate, org_id: uuid.UUID, actor_id: str | None) -> RFQ:
+        requisition = await self.requisitions.get_by_id(payload.purchase_requisition_id)
+        if not requisition:
+            raise NotFoundError(f"Purchase requisition {payload.purchase_requisition_id} not found")
+        if requisition.status != "Approved":
+            raise BusinessRuleError(
+                "Only an Approved purchase requisition can be sourced through an RFQ",
+                details=[{"field": "purchase_requisition_id", "issue": "not_approved"}],
+            )
+
+        rfq = RFQ(
+            org_id=org_id, purchase_requisition_id=payload.purchase_requisition_id,
+            status="Draft", deadline=payload.deadline,
+        )
+        self.repo.add(rfq)
+        await self.db.flush()
+        await write_audit_log(
+            self.db, user_id=actor_id, org_id=str(org_id), action="Create", entity_type="RFQ",
+            entity_id=rfq.id, new_value={"purchase_requisition_id": str(requisition.id)},
+        )
+        await self.db.commit()
+        return rfq
+
+    async def invite_supplier(self, rfq_id: uuid.UUID, supplier_id: uuid.UUID, actor_id: str | None) -> RFQSupplierInvite:
+        await self.get_rfq(rfq_id)
+        invite = RFQSupplierInvite(rfq_id=rfq_id, supplier_id=supplier_id)
+        self.invites.add(invite)
+        await self.db.flush()
+        await write_audit_log(
+            self.db, user_id=actor_id, org_id=None, action="Create", entity_type="RFQSupplierInvite",
+            entity_id=invite.id, new_value={"rfq_id": str(rfq_id), "supplier_id": str(supplier_id)},
+        )
+        await self.db.commit()
+        return invite
+
+    async def list_invites(self, rfq_id: uuid.UUID) -> list[RFQSupplierInvite]:
+        return await self.invites.list_by_rfq(rfq_id)
+
+    async def dispatch(self, rfq_id: uuid.UUID, actor_id: str | None) -> RFQ:
+        rfq = await self.get_rfq(rfq_id)
+        if rfq.status != "Draft":
+            raise BusinessRuleError(
+                f"Cannot dispatch an RFQ in status {rfq.status}",
+                details=[{"field": "status", "issue": "invalid_transition"}],
+            )
+        rfq.status = "Dispatched"
+        now = datetime.now(timezone.utc)
+        for invite in await self.invites.list_by_rfq(rfq_id):
+            invite.dispatched_at = now
+
+        await write_audit_log(
+            self.db, user_id=actor_id, org_id=str(rfq.org_id), action="Update", entity_type="RFQ",
+            entity_id=rfq.id, new_value={"status": "Dispatched"},
+        )
+        await self.db.commit()
+        return rfq
+
+
+class QuotationService:
+    """FR-008: buyer-recorded supplier bids and item-level award. Awarding an item
+    automatically un-awards any other quotation item for the same PR line — a PR line can
+    only be fulfilled by one supplier in this simplified model."""
+
+    def __init__(self, db: AsyncSession):
+        self.db = db
+        self.repo = QuotationRepository(db)
+        self.rfqs = RFQRepository(db)
+
+    async def list_for_rfq(self, rfq_id: uuid.UUID) -> list[Quotation]:
+        return await self.repo.list_by_rfq(rfq_id)
+
+    async def create_quotation(self, payload: QuotationCreate, org_id: uuid.UUID, actor_id: str | None) -> Quotation:
+        rfq = await self.rfqs.get_by_id(payload.rfq_id)
+        if not rfq:
+            raise NotFoundError(f"RFQ {payload.rfq_id} not found")
+
+        quotation = Quotation(
+            org_id=org_id, rfq_id=payload.rfq_id, supplier_id=payload.supplier_id,
+            submitted_date=payload.submitted_date,
+        )
+        self.repo.add(quotation)
+        await self.db.flush()
+
+        for item in payload.items:
+            self.repo.add_item(
+                QuotationItem(
+                    quotation_id=quotation.id, pr_item_id=item.pr_item_id, material_id=item.material_id,
+                    quantity=item.quantity, unit_price=item.unit_price,
+                )
+            )
+
+        await write_audit_log(
+            self.db, user_id=actor_id, org_id=str(org_id), action="Create", entity_type="Quotation",
+            entity_id=quotation.id, new_value={"rfq_id": str(payload.rfq_id), "supplier_id": str(payload.supplier_id)},
+        )
+        await self.db.commit()
+        return await self.repo.get_by_id(quotation.id)
+
+    async def award_item(self, item_id: uuid.UUID, actor_id: str | None) -> QuotationItem:
+        item = await self.repo.get_item_by_id(item_id)
+        if not item:
+            raise NotFoundError(f"Quotation item {item_id} not found")
+
+        existing_award = await self.repo.find_awarded_item_for_pr_item(item.pr_item_id)
+        if existing_award and existing_award.id != item.id:
+            existing_award.is_awarded = False
+
+        item.is_awarded = True
+        await write_audit_log(
+            self.db, user_id=actor_id, org_id=None, action="Update", entity_type="QuotationItem",
+            entity_id=item.id, new_value={"is_awarded": True},
+        )
+        await self.db.commit()
+        return item
+
+
+class PurchaseOrderService:
+    """FR-010, single-step approval matching PurchaseRequisitionService's pattern. Supplier-
+    split conversion: one PO per supplier from that RFQ's currently-awarded quotation items."""
+
+    def __init__(self, db: AsyncSession):
+        self.db = db
+        self.repo = PurchaseOrderRepository(db)
+        self.quotations = QuotationRepository(db)
+        self.rfqs = RFQRepository(db)
+
+    async def list_orders(
+        self, org_id: uuid.UUID, status: str | None, page: int, page_size: int
+    ) -> tuple[list[PurchaseOrder], int]:
+        return await self.repo.list_all(org_id, status, (page - 1) * page_size, page_size)
+
+    async def get_order(self, order_id: uuid.UUID) -> PurchaseOrder:
+        order = await self.repo.get_by_id(order_id)
+        if not order:
+            raise NotFoundError(f"Purchase order {order_id} not found")
+        return order
+
+    async def convert_from_rfq(self, rfq_id: uuid.UUID, org_id: uuid.UUID, actor_id: str | None) -> list[PurchaseOrder]:
+        rfq = await self.rfqs.get_by_id(rfq_id)
+        if not rfq:
+            raise NotFoundError(f"RFQ {rfq_id} not found")
+
+        awarded_items = await self.quotations.list_awarded_for_rfq(rfq_id)
+        if not awarded_items:
+            raise BusinessRuleError(
+                "No awarded quotation items to convert",
+                details=[{"field": "rfq_id", "issue": "nothing_awarded"}],
+            )
+
+        by_supplier: dict[uuid.UUID, list[QuotationItem]] = {}
+        for item in awarded_items:
+            quotation = await self.quotations.get_by_id(item.quotation_id)
+            by_supplier.setdefault(quotation.supplier_id, []).append(item)
+
+        created_orders: list[PurchaseOrder] = []
+        for supplier_id, items in by_supplier.items():
+            order = PurchaseOrder(
+                org_id=org_id, supplier_id=supplier_id, purchase_requisition_id=rfq.purchase_requisition_id,
+                rfq_id=rfq.id, status="Draft", order_date=date.today(),
+                # AuditMixin.created_by has no auto-population hook anywhere in this codebase
+                # (verified — nothing else sets it), so it must be set explicitly here for
+                # approve()'s self-approval check below to have real data to compare against.
+                created_by=uuid.UUID(actor_id) if actor_id else None,
+            )
+            self.repo.add(order)
+            await self.db.flush()
+
+            for line_no, item in enumerate(items, start=1):
+                self.repo.add_item(
+                    PurchaseOrderItem(
+                        purchase_order_id=order.id, line_no=line_no, material_id=item.material_id,
+                        quantity=item.quantity, unit_price=item.unit_price, pr_item_id=item.pr_item_id,
+                    )
+                )
+
+            await write_audit_log(
+                self.db, user_id=actor_id, org_id=str(org_id), action="Create", entity_type="PurchaseOrder",
+                entity_id=order.id, new_value={"supplier_id": str(supplier_id), "item_count": len(items)},
+            )
+            created_orders.append(order)
+
+        await self.db.commit()
+        return [await self.repo.get_by_id(o.id) for o in created_orders]
+
+    async def approve(self, order_id: uuid.UUID, actor_id: str) -> PurchaseOrder:
+        order = await self.get_order(order_id)
+        if str(order.created_by) == actor_id:
+            raise ForbiddenError("The creator of a purchase order cannot approve it")
+        if order.status != "Draft":
+            raise BusinessRuleError(
+                f"Cannot approve a purchase order in status {order.status}",
+                details=[{"field": "status", "issue": "invalid_transition"}],
+            )
+        order.status = "Approved"
+        order.approved_by = uuid.UUID(actor_id)
+        await write_audit_log(
+            self.db, user_id=actor_id, org_id=str(order.org_id), action="Update", entity_type="PurchaseOrder",
+            entity_id=order.id, new_value={"status": "Approved"},
+        )
+        await self.db.commit()
+        return order
+
+    async def send(self, order_id: uuid.UUID, actor_id: str | None) -> PurchaseOrder:
+        order = await self.get_order(order_id)
+        if order.status != "Approved":
+            raise BusinessRuleError(
+                f"Cannot send a purchase order in status {order.status}",
+                details=[{"field": "status", "issue": "invalid_transition"}],
+            )
+        order.status = "Sent"
+        await write_audit_log(
+            self.db, user_id=actor_id, org_id=str(order.org_id), action="Update", entity_type="PurchaseOrder",
+            entity_id=order.id, new_value={"status": "Sent"},
+        )
+        await self.db.commit()
+        return order
+
+    async def confirm(self, order_id: uuid.UUID, confirmed_date: date, actor_id: str | None) -> PurchaseOrder:
+        order = await self.get_order(order_id)
+        if order.status != "Sent":
+            raise BusinessRuleError(
+                f"Cannot confirm a purchase order in status {order.status}",
+                details=[{"field": "status", "issue": "invalid_transition"}],
+            )
+        order.confirmed_date = confirmed_date
+        order.confirmed_by_supplier = True
+        await write_audit_log(
+            self.db, user_id=actor_id, org_id=str(order.org_id), action="Update", entity_type="PurchaseOrder",
+            entity_id=order.id, new_value={"confirmed_date": str(confirmed_date)},
+        )
+        await self.db.commit()
+        return order

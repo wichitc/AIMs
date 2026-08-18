@@ -186,3 +186,99 @@ class PurchaseRequisitionRead(BaseModel):
 
 class PurchaseRequisitionDecision(BaseModel):
     reason: str | None = None
+
+
+class RFQCreate(BaseModel):
+    purchase_requisition_id: uuid.UUID
+    deadline: date | None = None
+
+
+class RFQRead(BaseModel):
+    id: uuid.UUID
+    org_id: uuid.UUID
+    purchase_requisition_id: uuid.UUID
+    status: str
+    deadline: date | None
+
+    model_config = {"from_attributes": True}
+
+
+class RFQInviteCreate(BaseModel):
+    supplier_id: uuid.UUID
+
+
+class RFQInviteRead(BaseModel):
+    id: uuid.UUID
+    rfq_id: uuid.UUID
+    supplier_id: uuid.UUID
+    dispatched_at: datetime | None
+
+    model_config = {"from_attributes": True}
+
+
+class QuotationItemCreate(BaseModel):
+    pr_item_id: uuid.UUID
+    material_id: uuid.UUID
+    quantity: float = Field(gt=0)
+    unit_price: float = Field(gt=0)
+
+
+class QuotationItemRead(BaseModel):
+    id: uuid.UUID
+    pr_item_id: uuid.UUID
+    material_id: uuid.UUID
+    quantity: float
+    unit_price: float
+    is_awarded: bool
+
+    model_config = {"from_attributes": True}
+
+
+class QuotationCreate(BaseModel):
+    rfq_id: uuid.UUID
+    supplier_id: uuid.UUID
+    submitted_date: date
+    items: list[QuotationItemCreate] = Field(min_length=1)
+
+
+class QuotationRead(BaseModel):
+    id: uuid.UUID
+    org_id: uuid.UUID
+    rfq_id: uuid.UUID
+    supplier_id: uuid.UUID
+    submitted_date: date
+    items: list[QuotationItemRead]
+
+    model_config = {"from_attributes": True}
+
+
+class PurchaseOrderItemRead(BaseModel):
+    id: uuid.UUID
+    line_no: int
+    material_id: uuid.UUID
+    quantity: float
+    unit_price: float
+    received_quantity: float
+    pr_item_id: uuid.UUID | None
+
+    model_config = {"from_attributes": True}
+
+
+class PurchaseOrderRead(BaseModel):
+    id: uuid.UUID
+    org_id: uuid.UUID
+    supplier_id: uuid.UUID
+    purchase_requisition_id: uuid.UUID | None
+    rfq_id: uuid.UUID | None
+    status: str
+    order_date: date
+    approved_by: uuid.UUID | None
+    confirmed_date: date | None
+    confirmed_by_supplier: bool
+    items: list[PurchaseOrderItemRead]
+
+    model_config = {"from_attributes": True}
+
+
+class PurchaseOrderConfirm(BaseModel):
+    confirmed_date: date

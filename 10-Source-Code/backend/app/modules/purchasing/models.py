@@ -140,3 +140,99 @@ class PurchaseRequisitionItem(Base, UUIDMixin, AuditMixin):
     required_date: Mapped[date | None] = mapped_column(Date)
 
     requisition: Mapped["PurchaseRequisition"] = relationship(back_populates="items")
+
+
+class RFQ(Base, UUIDMixin, AuditMixin):
+    """SAP MM FR-008, simplified — an RFQ inherits its requested lines 1:1 from the
+    Approved purchase requisition it references, rather than a separate rfq_items table
+    ("copy referenced PR" per FR-008); dispatch is symbolic (status flag + timestamped
+    invites), not a real email/PDF output — matches this build's "no legal output
+    templates/providers" simplification."""
+
+    __tablename__ = "rfq"
+
+    org_id: Mapped[uuid.UUID] = mapped_column(UUID(as_uuid=True), ForeignKey("organization.id"), nullable=False)
+    purchase_requisition_id: Mapped[uuid.UUID] = mapped_column(
+        UUID(as_uuid=True), ForeignKey("purchase_requisition.id"), nullable=False
+    )
+    status: Mapped[str] = mapped_column(String(20), nullable=False, default="Draft")  # Draft|Dispatched|Closed
+    deadline: Mapped[date | None] = mapped_column(Date)
+
+
+class RFQSupplierInvite(Base, UUIDMixin, AuditMixin):
+    __tablename__ = "rfq_supplier_invite"
+    __table_args__ = (UniqueConstraint("rfq_id", "supplier_id", name="uq_rfq_supplier_invite"),)
+
+    rfq_id: Mapped[uuid.UUID] = mapped_column(UUID(as_uuid=True), ForeignKey("rfq.id"), nullable=False)
+    supplier_id: Mapped[uuid.UUID] = mapped_column(UUID(as_uuid=True), ForeignKey("supplier.id"), nullable=False)
+    dispatched_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True))
+
+
+class Quotation(Base, UUIDMixin, AuditMixin):
+    """A supplier's recorded bid against an RFQ (SAP MM FR-008). AIMS has no external
+    supplier portal, so the buyer records the quotation on the supplier's behalf."""
+
+    __tablename__ = "quotation"
+
+    org_id: Mapped[uuid.UUID] = mapped_column(UUID(as_uuid=True), ForeignKey("organization.id"), nullable=False)
+    rfq_id: Mapped[uuid.UUID] = mapped_column(UUID(as_uuid=True), ForeignKey("rfq.id"), nullable=False)
+    supplier_id: Mapped[uuid.UUID] = mapped_column(UUID(as_uuid=True), ForeignKey("supplier.id"), nullable=False)
+    submitted_date: Mapped[date] = mapped_column(Date, nullable=False)
+
+    items: Mapped[list["QuotationItem"]] = relationship(back_populates="quotation", cascade="all, delete-orphan")
+
+
+class QuotationItem(Base, UUIDMixin, AuditMixin):
+    __tablename__ = "quotation_item"
+
+    quotation_id: Mapped[uuid.UUID] = mapped_column(UUID(as_uuid=True), ForeignKey("quotation.id"), nullable=False)
+    pr_item_id: Mapped[uuid.UUID] = mapped_column(
+        UUID(as_uuid=True), ForeignKey("purchase_requisition_item.id"), nullable=False
+    )
+    material_id: Mapped[uuid.UUID] = mapped_column(UUID(as_uuid=True), ForeignKey("material.id"), nullable=False)
+    quantity: Mapped[float] = mapped_column(Numeric(14, 3), nullable=False)
+    unit_price: Mapped[float] = mapped_column(Numeric(14, 2), nullable=False)
+    is_awarded: Mapped[bool] = mapped_column(Boolean, default=False, nullable=False)
+
+    quotation: Mapped["Quotation"] = relationship(back_populates="items")
+
+
+class PurchaseOrder(Base, UUIDMixin, AuditMixin):
+    """SAP MM FR-010, simplified lifecycle — Draft -> Approved -> Sent (dispatch is
+    symbolic, same simplification as RFQ). confirmed_date/confirmed_by_supplier collapse
+    SAP's separate per-schedule-line supplier_confirmations table into two header fields —
+    "was this order confirmed, and when" is enough signal for AIMS's context."""
+
+    __tablename__ = "purchase_order"
+
+    org_id: Mapped[uuid.UUID] = mapped_column(UUID(as_uuid=True), ForeignKey("organization.id"), nullable=False)
+    supplier_id: Mapped[uuid.UUID] = mapped_column(UUID(as_uuid=True), ForeignKey("supplier.id"), nullable=False)
+    purchase_requisition_id: Mapped[uuid.UUID | None] = mapped_column(
+        UUID(as_uuid=True), ForeignKey("purchase_requisition.id")
+    )
+    rfq_id: Mapped[uuid.UUID | None] = mapped_column(UUID(as_uuid=True), ForeignKey("rfq.id"))
+    status: Mapped[str] = mapped_column(String(20), nullable=False, default="Draft")
+    order_date: Mapped[date] = mapped_column(Date, nullable=False)
+    approved_by: Mapped[uuid.UUID | None] = mapped_column(UUID(as_uuid=True), ForeignKey("user.id"))
+    confirmed_date: Mapped[date | None] = mapped_column(Date)
+    confirmed_by_supplier: Mapped[bool] = mapped_column(Boolean, default=False, nullable=False)
+
+    items: Mapped[list["PurchaseOrderItem"]] = relationship(back_populates="order", cascade="all, delete-orphan")
+
+
+class PurchaseOrderItem(Base, UUIDMixin, AuditMixin):
+    __tablename__ = "purchase_order_item"
+
+    purchase_order_id: Mapped[uuid.UUID] = mapped_column(
+        UUID(as_uuid=True), ForeignKey("purchase_order.id"), nullable=False
+    )
+    line_no: Mapped[int] = mapped_column(nullable=False)
+    material_id: Mapped[uuid.UUID] = mapped_column(UUID(as_uuid=True), ForeignKey("material.id"), nullable=False)
+    quantity: Mapped[float] = mapped_column(Numeric(14, 3), nullable=False)
+    unit_price: Mapped[float] = mapped_column(Numeric(14, 2), nullable=False)
+    received_quantity: Mapped[float] = mapped_column(Numeric(14, 3), nullable=False, default=0)
+    pr_item_id: Mapped[uuid.UUID | None] = mapped_column(
+        UUID(as_uuid=True), ForeignKey("purchase_requisition_item.id")
+    )
+
+    order: Mapped["PurchaseOrder"] = relationship(back_populates="items")

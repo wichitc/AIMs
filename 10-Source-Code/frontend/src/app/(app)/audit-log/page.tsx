@@ -48,6 +48,11 @@ const ENTITY_TYPES = [
   "SourceListEntry",
   "QuotaArrangement",
   "PurchaseRequisition",
+  "RFQ",
+  "RFQSupplierInvite",
+  "Quotation",
+  "QuotationItem",
+  "PurchaseOrder",
 ];
 
 const ACTION_COLOR: Record<string, string> = {

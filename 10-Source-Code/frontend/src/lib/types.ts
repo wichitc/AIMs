@@ -299,6 +299,67 @@ export interface PurchaseRequisition {
   items: PurchaseRequisitionItem[];
 }
 
+export type RFQStatus = "Draft" | "Dispatched" | "Closed";
+
+export interface RFQ {
+  id: string;
+  org_id: string;
+  purchase_requisition_id: string;
+  status: RFQStatus;
+  deadline: string | null;
+}
+
+export interface RFQInvite {
+  id: string;
+  rfq_id: string;
+  supplier_id: string;
+  dispatched_at: string | null;
+}
+
+export interface QuotationItem {
+  id: string;
+  pr_item_id: string;
+  material_id: string;
+  quantity: number;
+  unit_price: number;
+  is_awarded: boolean;
+}
+
+export interface Quotation {
+  id: string;
+  org_id: string;
+  rfq_id: string;
+  supplier_id: string;
+  submitted_date: string;
+  items: QuotationItem[];
+}
+
+export type PurchaseOrderStatus = "Draft" | "Approved" | "Sent" | "Cancelled";
+
+export interface PurchaseOrderItem {
+  id: string;
+  line_no: number;
+  material_id: string;
+  quantity: number;
+  unit_price: number;
+  received_quantity: number;
+  pr_item_id: string | null;
+}
+
+export interface PurchaseOrder {
+  id: string;
+  org_id: string;
+  supplier_id: string;
+  purchase_requisition_id: string | null;
+  rfq_id: string | null;
+  status: PurchaseOrderStatus;
+  order_date: string;
+  approved_by: string | null;
+  confirmed_date: string | null;
+  confirmed_by_supplier: boolean;
+  items: PurchaseOrderItem[];
+}
+
 export interface AimsDocument {
   id: string;
   asset_id: string | null;

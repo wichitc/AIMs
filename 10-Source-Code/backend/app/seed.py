@@ -38,6 +38,9 @@ PERMISSION_CODES = [
     "supplier.read", "supplier.create",
     "sourcing.read", "sourcing.create",
     "purchase_requisition.read", "purchase_requisition.create", "purchase_requisition.approve",
+    "rfq.read", "rfq.create",
+    "quotation.read", "quotation.create",
+    "purchase_order.read", "purchase_order.create", "purchase_order.approve",
     "ai.query", "ai.generate", "ai.read",
 ]
 

@@ -10,6 +10,8 @@ from app.core.dependencies import CurrentUser, require_permission
 from app.modules.purchasing.schemas import (
     MaterialCreate,
     MaterialRead,
+    PurchaseOrderConfirm,
+    PurchaseOrderRead,
     PurchaseRequisitionCreate,
     PurchaseRequisitionDecision,
     PurchaseRequisitionRead,
@@ -17,6 +19,12 @@ from app.modules.purchasing.schemas import (
     PurchasingInfoRecordRead,
     QuotaArrangementCreate,
     QuotaArrangementRead,
+    QuotationCreate,
+    QuotationRead,
+    RFQCreate,
+    RFQInviteCreate,
+    RFQInviteRead,
+    RFQRead,
     SourceCandidateRead,
     SourceListEntryCreate,
     SourceListEntryRead,
@@ -26,9 +34,12 @@ from app.modules.purchasing.schemas import (
 )
 from app.modules.purchasing.service import (
     MaterialService,
+    PurchaseOrderService,
     PurchaseRequisitionService,
     PurchasingInfoRecordService,
     QuotaArrangementService,
+    QuotationService,
+    RFQService,
     SourceDeterminationService,
     SourceListEntryService,
     SupplierService,
@@ -267,3 +278,159 @@ async def withdraw_purchase_requisition(
 ):
     requisition = await PurchaseRequisitionService(db).withdraw(requisition_id, current_user.id)
     return ResponseEnvelope(data=PurchaseRequisitionRead.model_validate(requisition, from_attributes=True))
+
+
+@router.get("/rfqs", response_model=ResponseEnvelope[list[RFQRead]])
+async def list_rfqs(
+    db: AsyncSession = Depends(get_db),
+    current_user: CurrentUser = Depends(require_permission("rfq.read")),
+):
+    rfqs = await RFQService(db).list_rfqs(uuid.UUID(current_user.org_id))
+    return ResponseEnvelope(data=[RFQRead.model_validate(r, from_attributes=True) for r in rfqs])
+
+
+@router.post("/rfqs", response_model=ResponseEnvelope[RFQRead], status_code=201)
+async def create_rfq(
+    payload: RFQCreate,
+    db: AsyncSession = Depends(get_db),
+    current_user: CurrentUser = Depends(require_permission("rfq.create")),
+):
+    rfq = await RFQService(db).create_rfq(payload, uuid.UUID(current_user.org_id), current_user.id)
+    return ResponseEnvelope(data=RFQRead.model_validate(rfq, from_attributes=True))
+
+
+@router.get("/rfqs/{rfq_id}", response_model=ResponseEnvelope[RFQRead])
+async def get_rfq(
+    rfq_id: uuid.UUID,
+    db: AsyncSession = Depends(get_db),
+    current_user: CurrentUser = Depends(require_permission("rfq.read")),
+):
+    rfq = await RFQService(db).get_rfq(rfq_id)
+    return ResponseEnvelope(data=RFQRead.model_validate(rfq, from_attributes=True))
+
+
+@router.post("/rfqs/{rfq_id}/invite", response_model=ResponseEnvelope[RFQInviteRead], status_code=201)
+async def invite_supplier(
+    rfq_id: uuid.UUID,
+    payload: RFQInviteCreate,
+    db: AsyncSession = Depends(get_db),
+    current_user: CurrentUser = Depends(require_permission("rfq.create")),
+):
+    invite = await RFQService(db).invite_supplier(rfq_id, payload.supplier_id, current_user.id)
+    return ResponseEnvelope(data=RFQInviteRead.model_validate(invite, from_attributes=True))
+
+
+@router.get("/rfqs/{rfq_id}/invites", response_model=ResponseEnvelope[list[RFQInviteRead]])
+async def list_invites(
+    rfq_id: uuid.UUID,
+    db: AsyncSession = Depends(get_db),
+    current_user: CurrentUser = Depends(require_permission("rfq.read")),
+):
+    invites = await RFQService(db).list_invites(rfq_id)
+    return ResponseEnvelope(data=[RFQInviteRead.model_validate(i, from_attributes=True) for i in invites])
+
+
+@router.post("/rfqs/{rfq_id}/dispatch", response_model=ResponseEnvelope[RFQRead])
+async def dispatch_rfq(
+    rfq_id: uuid.UUID,
+    db: AsyncSession = Depends(get_db),
+    current_user: CurrentUser = Depends(require_permission("rfq.create")),
+):
+    rfq = await RFQService(db).dispatch(rfq_id, current_user.id)
+    return ResponseEnvelope(data=RFQRead.model_validate(rfq, from_attributes=True))
+
+
+@router.get("/quotations", response_model=ResponseEnvelope[list[QuotationRead]])
+async def list_quotations(
+    rfq_id: uuid.UUID,
+    db: AsyncSession = Depends(get_db),
+    current_user: CurrentUser = Depends(require_permission("quotation.read")),
+):
+    quotations = await QuotationService(db).list_for_rfq(rfq_id)
+    return ResponseEnvelope(data=[QuotationRead.model_validate(q, from_attributes=True) for q in quotations])
+
+
+@router.post("/quotations", response_model=ResponseEnvelope[QuotationRead], status_code=201)
+async def create_quotation(
+    payload: QuotationCreate,
+    db: AsyncSession = Depends(get_db),
+    current_user: CurrentUser = Depends(require_permission("quotation.create")),
+):
+    quotation = await QuotationService(db).create_quotation(payload, uuid.UUID(current_user.org_id), current_user.id)
+    return ResponseEnvelope(data=QuotationRead.model_validate(quotation, from_attributes=True))
+
+
+@router.post("/quotation-items/{item_id}/award", response_model=ResponseEnvelope[None])
+async def award_quotation_item(
+    item_id: uuid.UUID,
+    db: AsyncSession = Depends(get_db),
+    current_user: CurrentUser = Depends(require_permission("quotation.create")),
+):
+    await QuotationService(db).award_item(item_id, current_user.id)
+    return ResponseEnvelope(data=None)
+
+
+@router.post("/rfqs/{rfq_id}/convert-to-purchase-orders", response_model=ResponseEnvelope[list[PurchaseOrderRead]])
+async def convert_rfq_to_purchase_orders(
+    rfq_id: uuid.UUID,
+    db: AsyncSession = Depends(get_db),
+    current_user: CurrentUser = Depends(require_permission("purchase_order.create")),
+):
+    orders = await PurchaseOrderService(db).convert_from_rfq(rfq_id, uuid.UUID(current_user.org_id), current_user.id)
+    return ResponseEnvelope(data=[PurchaseOrderRead.model_validate(o, from_attributes=True) for o in orders])
+
+
+@router.get("/purchase-orders", response_model=ResponseEnvelope[list[PurchaseOrderRead]])
+async def list_purchase_orders(
+    status: str | None = None,
+    page: int = 1,
+    page_size: int = 20,
+    db: AsyncSession = Depends(get_db),
+    current_user: CurrentUser = Depends(require_permission("purchase_order.read")),
+):
+    orders, total = await PurchaseOrderService(db).list_orders(uuid.UUID(current_user.org_id), status, page, page_size)
+    return ResponseEnvelope(
+        data=[PurchaseOrderRead.model_validate(o, from_attributes=True) for o in orders],
+        meta=PaginationMeta(page=page, page_size=page_size, total=total),
+    )
+
+
+@router.get("/purchase-orders/{order_id}", response_model=ResponseEnvelope[PurchaseOrderRead])
+async def get_purchase_order(
+    order_id: uuid.UUID,
+    db: AsyncSession = Depends(get_db),
+    current_user: CurrentUser = Depends(require_permission("purchase_order.read")),
+):
+    order = await PurchaseOrderService(db).get_order(order_id)
+    return ResponseEnvelope(data=PurchaseOrderRead.model_validate(order, from_attributes=True))
+
+
+@router.post("/purchase-orders/{order_id}/approve", response_model=ResponseEnvelope[PurchaseOrderRead])
+async def approve_purchase_order(
+    order_id: uuid.UUID,
+    db: AsyncSession = Depends(get_db),
+    current_user: CurrentUser = Depends(require_permission("purchase_order.approve")),
+):
+    order = await PurchaseOrderService(db).approve(order_id, current_user.id)
+    return ResponseEnvelope(data=PurchaseOrderRead.model_validate(order, from_attributes=True))
+
+
+@router.post("/purchase-orders/{order_id}/send", response_model=ResponseEnvelope[PurchaseOrderRead])
+async def send_purchase_order(
+    order_id: uuid.UUID,
+    db: AsyncSession = Depends(get_db),
+    current_user: CurrentUser = Depends(require_permission("purchase_order.create")),
+):
+    order = await PurchaseOrderService(db).send(order_id, current_user.id)
+    return ResponseEnvelope(data=PurchaseOrderRead.model_validate(order, from_attributes=True))
+
+
+@router.post("/purchase-orders/{order_id}/confirm", response_model=ResponseEnvelope[PurchaseOrderRead])
+async def confirm_purchase_order(
+    order_id: uuid.UUID,
+    payload: PurchaseOrderConfirm,
+    db: AsyncSession = Depends(get_db),
+    current_user: CurrentUser = Depends(require_permission("purchase_order.create")),
+):
+    order = await PurchaseOrderService(db).confirm(order_id, payload.confirmed_date, current_user.id)
+    return ResponseEnvelope(data=PurchaseOrderRead.model_validate(order, from_attributes=True))

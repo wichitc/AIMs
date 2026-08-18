@@ -21,6 +21,7 @@ from app.modules.maintenance import models as maintenance_models  # noqa: F401
 from app.modules.document import models as document_models  # noqa: F401
 from app.modules.audit_log import models as audit_log_models  # noqa: F401
 from app.modules.purchasing import models as purchasing_models  # noqa: F401
+from app.modules.inventory import models as inventory_models  # noqa: F401
 
 config = context.config
 config.set_main_option("sqlalchemy.url", settings.database_url)

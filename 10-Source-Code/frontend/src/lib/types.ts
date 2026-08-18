@@ -360,6 +360,35 @@ export interface PurchaseOrder {
   items: PurchaseOrderItem[];
 }
 
+export interface MaterialDocumentItem {
+  id: string;
+  line_no: number;
+  material_id: string;
+  storage_location_id: string;
+  quantity: number;
+  unit_price: number;
+  po_item_id: string | null;
+}
+
+export interface MaterialDocument {
+  id: string;
+  org_id: string;
+  movement_type: string;
+  posted_date: string;
+  reference_type: string | null;
+  reference_id: string | null;
+  reversal_of_id: string | null;
+  items: MaterialDocumentItem[];
+}
+
+export interface StockBalance {
+  id: string;
+  material_id: string;
+  storage_location_id: string;
+  quantity: number;
+  value: number;
+}
+
 export interface AimsDocument {
   id: string;
   asset_id: string | null;

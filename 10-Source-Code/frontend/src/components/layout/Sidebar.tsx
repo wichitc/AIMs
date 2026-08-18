@@ -20,6 +20,7 @@ import {
   FileSpreadsheet,
   Send,
   ShoppingCart,
+  Warehouse,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 
@@ -36,6 +37,7 @@ const NAV_ITEMS = [
   { href: "/purchase-requisitions", label: "Purchase Requisitions", icon: FileSpreadsheet },
   { href: "/rfqs", label: "RFQs", icon: Send },
   { href: "/purchase-orders", label: "Purchase Orders", icon: ShoppingCart },
+  { href: "/stock", label: "Stock", icon: Warehouse },
   { href: "/documents", label: "Documents", icon: FileText },
   { href: "/copilot", label: "AI Copilot", icon: Sparkles },
   { href: "/audit-log", label: "Audit Log", icon: History },

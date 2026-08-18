@@ -41,6 +41,8 @@ PERMISSION_CODES = [
     "rfq.read", "rfq.create",
     "quotation.read", "quotation.create",
     "purchase_order.read", "purchase_order.create", "purchase_order.approve",
+    "inventory.read",
+    "goods_receipt.create",
     "ai.query", "ai.generate", "ai.read",
 ]
 

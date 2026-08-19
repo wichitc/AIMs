@@ -381,6 +381,36 @@ export interface MaterialDocument {
   items: MaterialDocumentItem[];
 }
 
+export type ReservationStatus = "Open" | "Fulfilled" | "Cancelled";
+
+export interface Reservation {
+  id: string;
+  org_id: string;
+  material_id: string;
+  storage_location_id: string;
+  quantity: number;
+  issued_quantity: number;
+  purpose: string | null;
+  maintenance_order_id: string | null;
+  required_date: string | null;
+  status: ReservationStatus;
+}
+
+export type StockTransferStatus = "Completed" | "InTransit" | "Received" | "Cancelled";
+
+export interface StockTransfer {
+  id: string;
+  org_id: string;
+  material_id: string;
+  source_location_id: string;
+  destination_location_id: string;
+  quantity: number;
+  transfer_mode: "OneStep" | "TwoStep";
+  status: StockTransferStatus;
+  issue_document_id: string | null;
+  receipt_document_id: string | null;
+}
+
 export interface StockBalance {
   id: string;
   material_id: string;

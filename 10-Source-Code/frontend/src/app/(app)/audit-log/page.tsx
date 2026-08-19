@@ -54,6 +54,8 @@ const ENTITY_TYPES = [
   "QuotationItem",
   "PurchaseOrder",
   "MaterialDocument",
+  "Reservation",
+  "StockTransfer",
 ];
 
 const ACTION_COLOR: Record<string, string> = {

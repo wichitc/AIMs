@@ -46,3 +46,61 @@ class StockBalanceRead(BaseModel):
     value: float
 
     model_config = {"from_attributes": True}
+
+
+class ReservationCreate(BaseModel):
+    material_id: uuid.UUID
+    storage_location_id: uuid.UUID
+    quantity: float = Field(gt=0)
+    purpose: str | None = None
+    maintenance_order_id: uuid.UUID | None = None
+    required_date: date | None = None
+
+
+class ReservationRead(BaseModel):
+    id: uuid.UUID
+    org_id: uuid.UUID
+    material_id: uuid.UUID
+    storage_location_id: uuid.UUID
+    quantity: float
+    issued_quantity: float
+    purpose: str | None
+    maintenance_order_id: uuid.UUID | None
+    required_date: date | None
+    status: str
+
+    model_config = {"from_attributes": True}
+
+
+class GoodsIssueCreate(BaseModel):
+    reservation_id: uuid.UUID
+    quantity: float = Field(gt=0)
+
+
+class StockTransferOneStepCreate(BaseModel):
+    material_id: uuid.UUID
+    source_location_id: uuid.UUID
+    destination_location_id: uuid.UUID
+    quantity: float = Field(gt=0)
+
+
+class StockTransferIssueCreate(BaseModel):
+    material_id: uuid.UUID
+    source_location_id: uuid.UUID
+    destination_location_id: uuid.UUID
+    quantity: float = Field(gt=0)
+
+
+class StockTransferRead(BaseModel):
+    id: uuid.UUID
+    org_id: uuid.UUID
+    material_id: uuid.UUID
+    source_location_id: uuid.UUID
+    destination_location_id: uuid.UUID
+    quantity: float
+    transfer_mode: str
+    status: str
+    issue_document_id: uuid.UUID | None
+    receipt_document_id: uuid.UUID | None
+
+    model_config = {"from_attributes": True}

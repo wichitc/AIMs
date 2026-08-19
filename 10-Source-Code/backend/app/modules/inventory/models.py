@@ -92,3 +92,55 @@ class StockBalance(Base, UUIDMixin):
     )
     quantity: Mapped[float] = mapped_column(Numeric(14, 3), nullable=False, default=0)
     value: Mapped[float] = mapped_column(Numeric(14, 2), nullable=False, default=0)
+
+
+class Reservation(Base, UUIDMixin, AuditMixin):
+    """FR-018: dated availability reservation. Goods Issue only ever consumes stock through
+    a Reservation in this build — matches "issue only from unrestricted stock" without a
+    separate special/blocked stock-type model (the single StockBalance dimension per
+    material+location *is* unrestricted stock here)."""
+
+    __tablename__ = "reservation"
+
+    org_id: Mapped[uuid.UUID] = mapped_column(UUID(as_uuid=True), ForeignKey("organization.id"), nullable=False)
+    material_id: Mapped[uuid.UUID] = mapped_column(UUID(as_uuid=True), ForeignKey("material.id"), nullable=False)
+    storage_location_id: Mapped[uuid.UUID] = mapped_column(
+        UUID(as_uuid=True), ForeignKey("location.id"), nullable=False
+    )
+    quantity: Mapped[float] = mapped_column(Numeric(14, 3), nullable=False)
+    issued_quantity: Mapped[float] = mapped_column(Numeric(14, 3), nullable=False, default=0)
+    purpose: Mapped[str | None] = mapped_column(String(300))
+    # AIMS-specific integration point beyond the SAP MM spec: a maintenance order can
+    # reserve/issue the parts it needs, same pattern as PurchaseRequisition.maintenance_order_id.
+    maintenance_order_id: Mapped[uuid.UUID | None] = mapped_column(
+        UUID(as_uuid=True), ForeignKey("maintenance_order.id")
+    )
+    required_date: Mapped[date | None] = mapped_column()
+    status: Mapped[str] = mapped_column(String(20), nullable=False, default="Open")  # Open|Fulfilled|Cancelled
+
+
+class StockTransfer(Base, UUIDMixin, AuditMixin):
+    """FR-019. One-step (301) posts a single document with both the issuing and receiving
+    item and completes immediately. Two-step (303 issue / 305 receipt) splits into two
+    documents with the material held "in transit" between them — represented here by
+    status=InTransit rather than a separate transit-balance table, since the transit
+    quantity is always fully derivable as sum(quantity) where status=InTransit. Reversal of
+    a transfer (304/306) is out of scope for this stage."""
+
+    __tablename__ = "stock_transfer"
+
+    org_id: Mapped[uuid.UUID] = mapped_column(UUID(as_uuid=True), ForeignKey("organization.id"), nullable=False)
+    material_id: Mapped[uuid.UUID] = mapped_column(UUID(as_uuid=True), ForeignKey("material.id"), nullable=False)
+    source_location_id: Mapped[uuid.UUID] = mapped_column(UUID(as_uuid=True), ForeignKey("location.id"), nullable=False)
+    destination_location_id: Mapped[uuid.UUID] = mapped_column(
+        UUID(as_uuid=True), ForeignKey("location.id"), nullable=False
+    )
+    quantity: Mapped[float] = mapped_column(Numeric(14, 3), nullable=False)
+    transfer_mode: Mapped[str] = mapped_column(String(10), nullable=False)  # OneStep|TwoStep
+    status: Mapped[str] = mapped_column(String(20), nullable=False)  # Completed|InTransit|Received|Cancelled
+    issue_document_id: Mapped[uuid.UUID | None] = mapped_column(
+        UUID(as_uuid=True), ForeignKey("material_document.id")
+    )
+    receipt_document_id: Mapped[uuid.UUID | None] = mapped_column(
+        UUID(as_uuid=True), ForeignKey("material_document.id")
+    )

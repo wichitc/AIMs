@@ -21,6 +21,8 @@ import {
   Send,
   ShoppingCart,
   Warehouse,
+  BookmarkCheck,
+  ArrowLeftRight,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 
@@ -38,6 +40,8 @@ const NAV_ITEMS = [
   { href: "/rfqs", label: "RFQs", icon: Send },
   { href: "/purchase-orders", label: "Purchase Orders", icon: ShoppingCart },
   { href: "/stock", label: "Stock", icon: Warehouse },
+  { href: "/reservations", label: "Reservations", icon: BookmarkCheck },
+  { href: "/stock-transfers", label: "Stock Transfers", icon: ArrowLeftRight },
   { href: "/documents", label: "Documents", icon: FileText },
   { href: "/copilot", label: "AI Copilot", icon: Sparkles },
   { href: "/audit-log", label: "Audit Log", icon: History },

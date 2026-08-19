@@ -4,7 +4,14 @@ from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy.orm import selectinload
 
-from app.modules.inventory.models import MaterialDocument, MaterialDocumentItem, StockBalance, StockLedger
+from app.modules.inventory.models import (
+    MaterialDocument,
+    MaterialDocumentItem,
+    Reservation,
+    StockBalance,
+    StockLedger,
+    StockTransfer,
+)
 
 
 class MaterialDocumentRepository:
@@ -66,3 +73,41 @@ class StockLedgerRepository:
 
     def add(self, entry: StockLedger) -> None:
         self.db.add(entry)
+
+
+class ReservationRepository:
+    def __init__(self, db: AsyncSession):
+        self.db = db
+
+    async def list_all(self, org_id: uuid.UUID, status: str | None = None) -> list[Reservation]:
+        stmt = select(Reservation).where(Reservation.org_id == org_id)
+        if status:
+            stmt = stmt.where(Reservation.status == status)
+        return list((await self.db.execute(stmt)).scalars().all())
+
+    async def get_by_id(self, reservation_id: uuid.UUID) -> Reservation | None:
+        return (
+            await self.db.execute(select(Reservation).where(Reservation.id == reservation_id))
+        ).scalar_one_or_none()
+
+    def add(self, reservation: Reservation) -> None:
+        self.db.add(reservation)
+
+
+class StockTransferRepository:
+    def __init__(self, db: AsyncSession):
+        self.db = db
+
+    async def list_all(self, org_id: uuid.UUID, status: str | None = None) -> list[StockTransfer]:
+        stmt = select(StockTransfer).where(StockTransfer.org_id == org_id)
+        if status:
+            stmt = stmt.where(StockTransfer.status == status)
+        return list((await self.db.execute(stmt)).scalars().all())
+
+    async def get_by_id(self, transfer_id: uuid.UUID) -> StockTransfer | None:
+        return (
+            await self.db.execute(select(StockTransfer).where(StockTransfer.id == transfer_id))
+        ).scalar_one_or_none()
+
+    def add(self, transfer: StockTransfer) -> None:
+        self.db.add(transfer)
